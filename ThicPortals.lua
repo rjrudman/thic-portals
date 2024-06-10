@@ -338,19 +338,22 @@ local function watchForPlayerProximity(sender)
         if UnitInParty(sender) then
             if isPlayerWithinRange(sender, distanceInferringClose) then
                 if not flagProximityReached then
-                    print(sender .. " is nearby and might be taking the portal.");
+                    print(sender .. " is nearby and might be taking the portal.")
                     flagProximityReached = true;
                 end
             elseif flagProximityReached and not isPlayerWithinRange(sender, distanceInferringTravelled) then
-                print(sender .. " has moved away, assuming they took the portal.");
+                print(sender .. " has moved away, assuming they took the portal.")
                 pendingInvites[sender].travelled = true;
                 ticker:Cancel(); -- Cancel the ticker when the player has moved away
             end
         else
+            if pendingInvites[sender] and pendingInvites[sender].ticketFrame then
+                pendingInvites[sender].ticketFrame:Hide()
+            end
             pendingInvites[sender] = nil;
             ticker:Cancel(); -- Cancel the ticker if the player is no longer in the party
         end
-    end, 180)
+    end)
 end
 
 -- Function that includes some fluff to the "invite a player" process
