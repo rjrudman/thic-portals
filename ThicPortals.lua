@@ -26,6 +26,8 @@ local pendingInvites = {} -- Table to store pending invites with all relevant da
 local inviteCooldown = 300 -- Cooldown period in seconds
 local distanceInferringClose = 50;
 local distanceInferringTravelled = 1000;
+local consecutiveLeavesWithoutPayment = 0
+local leaveWithoutPaymentThreshold = 2;
 local currentTraderName = nil
 local currentTraderRealm = nil
 local currentTraderMoney = nil
@@ -427,6 +429,17 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 end
                 pendingInvites[sender] = nil
                 print(sender .. " has left the party and has been removed from tracking.")
+
+                -- Increment the counter for leaving without payment
+                consecutiveLeavesWithoutPayment = consecutiveLeavesWithoutPayment + 1
+                print("Consecutive leaves without payment: " .. consecutiveLeavesWithoutPayment)
+
+                -- Check if the counter reaches 3 and shut down the addon
+                if consecutiveLeavesWithoutPayment >= leaveWithoutPaymentThreshold then
+                    addonEnabled = false
+                    print("Three people in a row left without payment - you are likely AFK. Shutting down the addon.")
+                    toggleAddonEnabled()  -- Update the button text to reflect the shutdown
+                end
             elseif not inviteData.sentInviteMessage then
                 displayTicketWindow(sender, inviteData.destination)
 
@@ -444,6 +457,10 @@ frame:SetScript("OnEvent", function(self, event, ...)
             end
         end
     elseif event == "TRADE_SHOW" then
+        -- Reset the counter when a trade is initiated
+        consecutiveLeavesWithoutPayment = 0
+        print("Trade initiated. Resetting consecutive leaves without payment counter.")
+
         -- NPC is currently the player you're trading
         currentTraderName, currentTraderRealm = UnitName("NPC", true); -- Store the name of the player when the trade window is opened
 
