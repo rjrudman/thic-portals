@@ -420,23 +420,27 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
         printGoldInformation()
     elseif event == "GROUP_ROSTER_UPDATE" then
-        if IsInGroup() then
-            for sender, inviteData in pairs(pendingInvites) do
-                if UnitInParty(sender) and not inviteData.sentInviteMessage then
-                    displayTicketWindow(sender, inviteData.destination)
-
-                    if inviteData.destination then
-                        SendChatMessage(inviteMessage, "WHISPER", nil, inviteData.fullName)
-                    else
-                        SendChatMessage(inviteMessageWithoutDestination, "WHISPER", nil, inviteData.fullName)
-                    end
-
-                    pendingInvites[sender].sentInviteMessage = true
-
-                    markSelfWithStar() -- Mark yourself with a star
-
-                    watchForPlayerProximity(sender) -- Start tracking player proximity to infer teleportation
+        for sender, inviteData in pairs(pendingInvites) do
+            if not UnitInParty(sender) then
+                if inviteData.ticketFrame then
+                    inviteData.ticketFrame:Hide()
                 end
+                pendingInvites[sender] = nil
+                print(sender .. " has left the party and has been removed from tracking.")
+            elseif not inviteData.sentInviteMessage then
+                displayTicketWindow(sender, inviteData.destination)
+
+                if inviteData.destination then
+                    SendChatMessage(inviteMessage, "WHISPER", nil, inviteData.fullName)
+                else
+                    SendChatMessage(inviteMessageWithoutDestination, "WHISPER", nil, inviteData.fullName)
+                end
+
+                pendingInvites[sender].sentInviteMessage = true
+
+                markSelfWithStar() -- Mark yourself with a star
+
+                watchForPlayerProximity(sender) -- Start tracking player proximity to infer teleportation
             end
         end
     elseif event == "TRADE_SHOW" then
