@@ -227,6 +227,7 @@ local function displayTicketWindow(sender, destination)
     -- Store reference to the destinationValue in pendingInvites
     if pendingInvites[sender] then
         pendingInvites[sender].destinationValue = destinationValue
+        pendingInvites[sender].ticketFrame = ticketFrame
     end
 
     -- Create the close button
