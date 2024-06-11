@@ -378,7 +378,7 @@ local function handleInviteAndMessage(sender, playerName, message)
             invitePlayer(sender);
             -- Record the time and track the invite as pending
             local destinationPosition, destinationKeyword = findKeywordPosition(message, destinationKeywords);
-            pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, sentInviteMessage = false, travelled = false, fullName = sender};
+            pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, travelled = false, fullName = sender};
             setSenderExpiryTimer(playerName);
         else
             print("Player " .. sender .. " is still on cooldown.");
@@ -397,7 +397,7 @@ local function handleInviteAndMessage(sender, playerName, message)
                 if not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown then
                     invitePlayer(sender);
                     -- Record the time and track the invite as pending
-                    pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, sentInviteMessage = false, travelled = false, fullName = sender}
+                    pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, travelled = false, fullName = sender}
                     setSenderExpiryTimer(playerName);
                 else
                     print("Player " .. sender .. " is still on cooldown.");
@@ -423,11 +423,26 @@ frame:SetScript("OnEvent", function(self, event, ...)
         printGoldInformation()
     elseif event == "GROUP_ROSTER_UPDATE" then
         for sender, inviteData in pairs(pendingInvites) do
-            if not UnitInParty(sender) then
+            if UnitInParty(sender) and not inviteData.hasJoined then
+                inviteData.hasJoined = true
+                displayTicketWindow(sender, inviteData.destination)
+
+                if inviteData.destination then
+                    SendChatMessage(inviteMessage, "WHISPER", nil, inviteData.fullName)
+                else
+                    SendChatMessage(inviteMessageWithoutDestination, "WHISPER", nil, inviteData.fullName)
+                end
+
+                markSelfWithStar() -- Mark yourself with a star
+
+                watchForPlayerProximity(sender) -- Start tracking player proximity to infer teleportation
+            elseif not UnitInParty(sender) and inviteData.hasJoined then
                 if inviteData.ticketFrame then
                     inviteData.ticketFrame:Hide()
                 end
+
                 pendingInvites[sender] = nil
+
                 print(sender .. " has left the party and has been removed from tracking.")
 
                 -- Increment the counter for leaving without payment
@@ -440,20 +455,6 @@ frame:SetScript("OnEvent", function(self, event, ...)
                     print("Three people in a row left without payment - you are likely AFK. Shutting down the addon.")
                     toggleAddonEnabled()  -- Update the button text to reflect the shutdown
                 end
-            elseif not inviteData.sentInviteMessage then
-                displayTicketWindow(sender, inviteData.destination)
-
-                if inviteData.destination then
-                    SendChatMessage(inviteMessage, "WHISPER", nil, inviteData.fullName)
-                else
-                    SendChatMessage(inviteMessageWithoutDestination, "WHISPER", nil, inviteData.fullName)
-                end
-
-                pendingInvites[sender].sentInviteMessage = true
-
-                markSelfWithStar() -- Mark yourself with a star
-
-                watchForPlayerProximity(sender) -- Start tracking player proximity to infer teleportation
             end
         end
     elseif event == "TRADE_SHOW" then
