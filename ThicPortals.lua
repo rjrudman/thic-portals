@@ -1,4 +1,3 @@
-local frame = CreateFrame("Frame")
 local inviteMessage = "Good day! I am creating a portal for you as we speak, please head over - I'm marked with a star."
 local inviteMessageWithoutDestination = "Good day! Please specify a destination and I will create a portal for you."
 local tipMessage = "Thank you for your tip. Enjoy your journey and thanks for choosing Thic-Portals. Safe travels!"
@@ -34,8 +33,8 @@ local currentTraderMoney = nil
 local banList = {"Seduce", "Skrill"}
 
 -- Config checkboxes
-local addonEnabled = true
-local addonEnabledCheckbox = true;
+local addonEnabled = false
+local addonEnabledCheckbox = false;
 local soundEnabled = true
 local soundEnabledCheckbox = true;
 local debugMode = false
@@ -43,6 +42,9 @@ local debugModeCheckbox = false;
 
 -- Initialize saved variables
 ThicPortalsSaved = false
+
+-- Our global frame
+local frame = CreateFrame("Frame")
 
 -- Register event handlers for receiving chat messages, party and trade events
 frame:RegisterEvent("CHAT_MSG_SAY")
@@ -58,9 +60,9 @@ frame:RegisterEvent("UI_INFO_MESSAGE")
 
 
 local function printGoldInformation()
-    print(string.format("Total trades completed: %d", ThicPortalsSaved.totalTradesCompleted));
-    print(string.format("Total gold earned: %dg %ds %dc", math.floor(ThicPortalsSaved.totalGold / 10000), math.floor((ThicPortalsSaved.totalGold % 10000) / 100), ThicPortalsSaved.totalGold % 100));
-    print(string.format("Gold earned today: %dg %ds %dc", math.floor(ThicPortalsSaved.dailyGold / 10000), math.floor((ThicPortalsSaved.dailyGold % 10000) / 100), ThicPortalsSaved.dailyGold % 100));
+    print(string.format("|cff87CEEB[Thic-Portals]|r Total trades completed: %d", ThicPortalsSaved.totalTradesCompleted));
+    print(string.format("|cff87CEEB[Thic-Portals]|r Total gold earned: %dg %ds %dc", math.floor(ThicPortalsSaved.totalGold / 10000), math.floor((ThicPortalsSaved.totalGold % 10000) / 100), ThicPortalsSaved.totalGold % 100));
+    print(string.format("|cff87CEEB[Thic-Portals]|r Gold earned today: %dg %ds %dc", math.floor(ThicPortalsSaved.dailyGold / 10000), math.floor((ThicPortalsSaved.dailyGold % 10000) / 100), ThicPortalsSaved.dailyGold % 100));
 end
 
 local function resetDailyGoldIfNeeded()
@@ -68,7 +70,8 @@ local function resetDailyGoldIfNeeded()
     if ThicPortalsSaved.lastUpdateDate ~= currentDate then
         ThicPortalsSaved.dailyGold = 0;
         ThicPortalsSaved.lastUpdateDate = currentDate;
-        print("Daily gold counter reset for a new day.");
+
+        print("|cff87CEEB[Thic-Portals]|r Daily gold counter reset for a new day.");
     end
 end
 
@@ -108,7 +111,7 @@ end
 -- Function to add a player to the ban list
 local function addToBanList(player)
     table.insert(banList, player)
-    print(player .. " has been added to the ban list.")
+    print("|cff87CEEB[Thic-Portals]|r " .. player .. " has been added to the ban list.")
 end
 
 -- Function to check if a player is on the ban list
@@ -123,19 +126,34 @@ end
 
 -- Function to check if there was a tip in the trade
 local function checkTradeTip()
-    print("Checking trade tip...");
+    print("|cff87CEEB[Thic-Portals]|r Checking trade tip...");
 
     local copper = tonumber(currentTraderMoney);
     local silver = math.floor((copper % 10000) / 100);
     local gold = math.floor(copper / 10000);
     local remainingCopper = copper % 100;
 
-    print(string.format("Received %dg %ds %dc from the trade.", gold, silver, remainingCopper));
+    print(string.format("|cff87CEEB[Thic-Portals]|r Received %dg %ds %dc from the trade.", gold, silver, remainingCopper));
 
     if gold > 0 or silver > 0 or remainingCopper > 0 then
         resetDailyGoldIfNeeded();
         addTipToRollingTotal(gold, silver, remainingCopper);
         incrementTradesCompleted();
+
+        -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
+        if gold > 8 then
+            SendChatMessage("<3", "WHISPER", nil, pendingInvites[currentTraderName].fullName)
+        end
+
+        -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
+        if gold == 69 or silver == 69 or remainingCopper == 69 then
+            SendChatMessage("Nice (⌐□_□)", "WHISPER", nil, pendingInvites[currentTraderName].fullName)
+        end
+
+        -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
+        if gold == 4 and silver == 20 then
+            SendChatMessage("420 blaze it (⌐□_□)-~", "WHISPER", nil, pendingInvites[currentTraderName].fullName)
+        end
 
         return true
     else
@@ -176,7 +194,7 @@ local function updatePendingInviteDestination(playerName, message)
         if pendingInvites[playerName].destinationValue then
             pendingInvites[playerName].destinationValue:SetText(destinationKeyword);
         end
-        print("Updated destination for " .. playerName .. " to " .. destinationKeyword);
+        print("|cff87CEEB[Thic-Portals]|r Updated destination for " .. playerName .. " to " .. destinationKeyword);
     end
 end
 
@@ -255,8 +273,13 @@ local function displayTicketWindow(sender, destination)
     removeButton:SetEnabled(false)  -- Initially disable the button
     removeButton:SetScript("OnClick", function()
         UninviteUnit(sender)
-        print(sender .. " has been removed from the party.")
+
+        if debugMode then
+            print("|cff87CEEB[Thic-Portals]|r " .. sender .. " has been removed from the party.")
+        end
+
         pendingInvites[sender] = nil
+
         ticketFrame:Hide()
     end)
 
@@ -297,7 +320,7 @@ end
 local function setSenderExpiryTimer(playerName)
     C_Timer.After(180, function()
         if pendingInvites[playerName] then
-            print("Invite for " .. playerName .. " expired.");
+            print("|cff87CEEB[Thic-Portals]|r Invite for " .. playerName .. " expired.");
             pendingInvites[playerName] = nil;
         end
     end)
@@ -306,7 +329,6 @@ end
 -- Function to play a sound when a match is found
 local function playMatchSound()
     if soundEnabled then
-        print("Playing invite sound")
         PlaySoundFile("Interface\\AddOns\\ThicPortals\\Media\\Sounds\\invitesent.mp3", "Master")
     end
 end
@@ -334,18 +356,19 @@ local function watchForPlayerProximity(sender)
     local ticker
     local flagProximityReached = false
 
-    print("watchForPlayerProximity: " .. sender)
-
     ticker = C_Timer.NewTicker(1, function()
         if UnitInParty(sender) then
             if isPlayerWithinRange(sender, distanceInferringClose) then
                 if not flagProximityReached then
-                    print(sender .. " is nearby and might be taking the portal.")
+                    print("|cff87CEEB[Thic-Portals]|r " .. sender .. " is nearby and might be taking the portal.")
                     flagProximityReached = true;
                 end
             elseif flagProximityReached and not isPlayerWithinRange(sender, distanceInferringTravelled) then
-                print(sender .. " has moved away, assuming they took the portal.")
-                pendingInvites[sender].travelled = true;
+                if debugMode then
+                    print("|cff87CEEB[Thic-Portals]|r " .. sender .. " has moved away, assuming they took the portal.")
+                end
+
+                    pendingInvites[sender].travelled = true;
                 ticker:Cancel(); -- Cancel the ticker when the player has moved away
             end
         else
@@ -362,7 +385,7 @@ end
 local function invitePlayer(sender)
     playMatchSound();
     InviteUnit(sender)
-    print("Invited " .. sender .. " to the group.")
+    print("|cff87CEEB[Thic-Portals]|r Invited " .. sender .. " to the group.")
 end
 
 -- Function to handle invites and messages
@@ -378,7 +401,7 @@ local function handleInviteAndMessage(sender, playerName, message)
             invitePlayer(sender);
             -- Record the time and track the invite as pending
             local destinationPosition, destinationKeyword = findKeywordPosition(message, destinationKeywords);
-            pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, travelled = false, fullName = sender};
+            pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, hasPaid = false, travelled = false, fullName = sender};
             setSenderExpiryTimer(playerName);
         else
             print("Player " .. sender .. " is still on cooldown.");
@@ -397,7 +420,7 @@ local function handleInviteAndMessage(sender, playerName, message)
                 if not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown then
                     invitePlayer(sender);
                     -- Record the time and track the invite as pending
-                    pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, travelled = false, fullName = sender}
+                    pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, hasPaid = false, travelled = false, fullName = sender}
                     setSenderExpiryTimer(playerName);
                 else
                     print("Player " .. sender .. " is still on cooldown.");
@@ -410,17 +433,261 @@ local function handleInviteAndMessage(sender, playerName, message)
     updatePendingInviteDestination(playerName, message);
 end
 
+
+
+-- Create the toggle button
+local toggleButton = CreateFrame("Button", "ToggleButton", UIParent, "UIPanelButtonTemplate");
+toggleButton:SetSize(64, 64); -- Width, Height
+toggleButton:SetPoint("CENTER", 0, 200); -- Position on screen
+
+-- Disable the default draw layers to hide the button's default textures
+toggleButton:DisableDrawLayer("BACKGROUND")
+toggleButton:DisableDrawLayer("BORDER")
+toggleButton:DisableDrawLayer("ARTWORK")
+
+-- Create the background texture
+local backgroundTexture = toggleButton:CreateTexture(nil, "OVERLAY")
+backgroundTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
+backgroundTexture:SetAllPoints(toggleButton)
+
+-- Flip the texture vertically
+backgroundTexture:SetTexCoord(0, 1, 1, 0)
+
+-- Make the button moveable
+toggleButton:SetMovable(true);
+toggleButton:EnableMouse(true);
+toggleButton:RegisterForDrag("LeftButton");
+toggleButton:SetScript("OnDragStart", toggleButton.StartMoving);
+toggleButton:SetScript("OnDragStop", toggleButton.StopMovingOrSizing);
+
+-- Function to update the button text and color
+local function toggleAddonEnabled()
+    if addonEnabled then
+        backgroundTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsopen.tga") -- Replace with the path to your image
+        addonEnabledCheckbox:SetChecked(true)
+        print("|cff87CEEB[Thic-Portals]|r The portal shop is open!")
+    else
+        backgroundTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
+        addonEnabledCheckbox:SetChecked(false)
+        print("|cff87CEEB[Thic-Portals]|r You closed the shop.")
+    end
+end
+
+-- Script to handle button clicks
+toggleButton:SetScript("OnMouseUp", function(self, button)
+    if button == "LeftButton" then
+        addonEnabled = not addonEnabled; -- Toggle the state
+        toggleAddonEnabled(); -- Update the button text
+
+        if addonEnabled then
+            print("|cff87CEEB[Thic-Portals]|r Addon enabled.");
+        else
+            print("|cff87CEEB[Thic-Portals]|r Addon disabled.");
+        end
+    elseif button == "RightButton" then
+        print("|cff87CEEB[Thic-Portals]|r Opening settings...");
+
+        InterfaceAddOnsList_Update();
+        InterfaceOptionsFrame_OpenToCategory("Thic-Portals")
+        InterfaceOptionsFrame_OpenToCategory("Thic-Portals")
+    end
+end)
+
+local function createOptionsPanel()
+    local panel = CreateFrame("Frame")
+    panel.name = "Thic-Portals"
+
+    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("Thic-Portals Service Configuration")
+
+    -- Addon On/Off Checkbox
+    addonEnabledCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
+    addonEnabledCheckbox:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -25)
+    addonEnabledCheckbox.Text:SetText("Enable Addon")
+    addonEnabledCheckbox:SetChecked(addonEnabled)
+    addonEnabledCheckbox:SetScript("OnClick", function(self)
+        addonEnabled = self:GetChecked()
+        toggleAddonEnabled()
+    end)
+
+    -- Sound On/Off Checkbox
+    soundEnabledCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
+    soundEnabledCheckbox:SetPoint("TOPLEFT", addonEnabledCheckbox, "BOTTOMLEFT", 0, -8)
+    soundEnabledCheckbox.Text:SetText("Enable Sound")
+    soundEnabledCheckbox:SetChecked(soundEnabled)
+    soundEnabledCheckbox:SetScript("OnClick", function(self)
+        soundEnabled = self:GetChecked()
+        if soundEnabled then
+            print("|cff87CEEB[Thic-Portals]|r Sound enabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Sound disabled.")
+        end
+    end)
+
+    -- Debug Mode Checkbox
+    debugModeCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
+    debugModeCheckbox:SetPoint("TOPLEFT", soundEnabledCheckbox, "BOTTOMLEFT", 0, -8)
+    debugModeCheckbox.Text:SetText("Enable Debug Mode")
+    debugModeCheckbox:SetChecked(debugMode)
+    debugModeCheckbox:SetScript("OnClick", function(self)
+        debugMode = self:GetChecked()
+        if debugMode then
+            print("|cff87CEEB[Thic-Portals]|r Test mode enabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Test mode disabled.")
+        end
+    end)
+
+    -- Gold Stats Section Title
+    local goldStatsTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    goldStatsTitle:SetPoint("TOPLEFT", debugModeCheckbox, "BOTTOMLEFT", 0, -30)
+    goldStatsTitle:SetText("Gold Statistics")
+
+    -- Total Gold Earned
+    local totalGoldLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    totalGoldLabel:SetPoint("TOPLEFT", goldStatsTitle, "BOTTOMLEFT", 5, -30)
+    totalGoldLabel:SetText("Total Gold Earned:")
+
+    local totalGoldValue = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    totalGoldValue:SetPoint("LEFT", totalGoldLabel, "RIGHT", 8, 0)
+    totalGoldValue:SetText(string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.totalGold / 10000), math.floor((ThicPortalsSaved.totalGold % 10000) / 100), ThicPortalsSaved.totalGold % 100))
+
+    -- Gold Earned Today
+    local dailyGoldLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    dailyGoldLabel:SetPoint("TOPLEFT", totalGoldLabel, "BOTTOMLEFT", 0, -8)
+    dailyGoldLabel:SetText("Gold Earned Today:")
+
+    local dailyGoldValue = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    dailyGoldValue:SetPoint("LEFT", dailyGoldLabel, "RIGHT", 8, 0)
+    dailyGoldValue:SetText(string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.dailyGold / 10000), math.floor((ThicPortalsSaved.dailyGold % 10000) / 100), ThicPortalsSaved.dailyGold % 100))
+
+    -- Total Trades Completed
+    local totalTradesLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    totalTradesLabel:SetPoint("TOPLEFT", dailyGoldLabel, "BOTTOMLEFT", 0, -8)
+    totalTradesLabel:SetText("Total Trades Completed:")
+
+    local totalTradesValue = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    totalTradesValue:SetPoint("LEFT", totalTradesLabel, "RIGHT", 8, 0)
+    totalTradesValue:SetText(ThicPortalsSaved.totalTradesCompleted)
+
+    -- Ban List Section Title
+    local banListTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    banListTitle:SetPoint("TOPLEFT", totalTradesLabel, "BOTTOMLEFT", -5, -40)
+    banListTitle:SetText("Ban List Management")
+
+    -- Ban List EditBox
+    local banListEditBox = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
+    banListEditBox:SetSize(180, 20)
+    banListEditBox:SetPoint("TOPLEFT", banListTitle, "BOTTOMLEFT", 0, -8)
+    banListEditBox:SetAutoFocus(false)
+    banListEditBox:SetScript("OnEnterPressed", function(self)
+        local playerName = self:GetText()
+        if playerName ~= "" then
+            addToBanList(playerName)
+            self:SetText("")
+        end
+    end)
+
+    -- Ban List Add Button
+    local addButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    addButton:SetSize(60, 20)
+    addButton:SetPoint("LEFT", banListEditBox, "RIGHT", 8, 0)
+    addButton:SetText("Add")
+    addButton:SetScript("OnClick", function()
+        local playerName = banListEditBox:GetText()
+        if playerName ~= "" then
+            addToBanList(playerName)
+            banListEditBox:SetText("")
+        end
+    end)
+
+    -- Ban List Remove Button
+    local removeButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    removeButton:SetSize(60, 20)
+    removeButton:SetPoint("TOPLEFT", banListEditBox, "BOTTOMLEFT", 0, -8)
+    removeButton:SetText("Remove")
+    removeButton:SetScript("OnClick", function()
+        local playerName = banListEditBox:GetText()
+        if playerName ~= "" then
+            removeFromBanList(playerName)
+            banListEditBox:SetText("")
+        end
+    end)
+
+    -- Ban List ScrollFrame
+    local scrollFrame = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetSize(180, 100)
+    scrollFrame:SetPoint("TOPLEFT", removeButton, "BOTTOMLEFT", 0, -8)
+
+    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(180, 100)
+    scrollFrame:SetScrollChild(scrollChild)
+
+    local banListText = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    banListText:SetPoint("TOPLEFT")
+    banListText:SetJustifyH("LEFT")
+
+    local function updateBanListText()
+        local text = ""
+        for _, player in ipairs(banList) do
+            text = text .. player .. "\n"
+        end
+        banListText:SetText(text)
+    end
+
+    updateBanListText()
+
+    -- Add to Ban List Function
+    function addToBanList(player)
+        if not isPlayerBanned(player) then
+            table.insert(banList, player)
+            updateBanListText()
+            print("|cff87CEEB[Thic-Portals]|r " .. player .. " has been added to the ban list.")
+        end
+    end
+
+    -- Remove from Ban List Function
+    function removeFromBanList(player)
+        for i, bannedPlayer in ipairs(banList) do
+            if bannedPlayer == player then
+                table.remove(banList, i)
+                updateBanListText()
+                print("|cff87CEEB[Thic-Portals]|r " .. player .. " has been removed from the ban list.")
+                break
+            end
+        end
+    end
+
+    InterfaceOptions_AddCategory(panel)
+end
+
+-- Initialize saved variables
+local function initializeSavedVariables()
+    if type(ThicPortalsSaved) ~= "table" then
+        ThicPortalsSaved = {}
+    end
+
+    ThicPortalsSaved.totalGold = ThicPortalsSaved.totalGold or 0
+    ThicPortalsSaved.dailyGold = ThicPortalsSaved.dailyGold or 0
+    ThicPortalsSaved.totalTradesCompleted = ThicPortalsSaved.totalTradesCompleted or 0
+    ThicPortalsSaved.lastUpdateDate = ThicPortalsSaved.lastUpdateDate or date("%Y-%m-%d")
+end
+
 -- Event handler function
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "VARIABLES_LOADED" then
         -- Initialize saved variables
-        ThicPortalsSaved = ThicPortalsSaved or {}
-        ThicPortalsSaved.totalGold = ThicPortalsSaved.totalGold or 0
-        ThicPortalsSaved.dailyGold = ThicPortalsSaved.dailyGold or 0
-        ThicPortalsSaved.totalTradesCompleted = ThicPortalsSaved.totalTradesCompleted or 0
-        ThicPortalsSaved.lastUpdateDate = ThicPortalsSaved.lastUpdateDate or date("%Y-%m-%d")
+        initializeSavedVariables()
 
+        -- Print gold info to the console
         printGoldInformation()
+
+        -- Create the in-game options panel for the addon
+        createOptionsPanel()
+
+        -- Update the button text initially
+        toggleAddonEnabled()
     elseif event == "GROUP_ROSTER_UPDATE" then
         for sender, inviteData in pairs(pendingInvites) do
             if UnitInParty(sender) and not inviteData.hasJoined then
@@ -443,29 +710,38 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
                 pendingInvites[sender] = nil
 
-                print(sender .. " has left the party and has been removed from tracking.")
+                if debugMode then
+                    print("|cff87CEEB[Thic-Portals]|r " .. sender .. " has left the party and has been removed from tracking.")
+                end
 
-                -- Increment the counter for leaving without payment
-                consecutiveLeavesWithoutPayment = consecutiveLeavesWithoutPayment + 1
-                print("Consecutive leaves without payment: " .. consecutiveLeavesWithoutPayment)
+                if not inviteData.hasPaid then
+                    -- Increment the counter for leaving without payment
+                    consecutiveLeavesWithoutPayment = consecutiveLeavesWithoutPayment + 1
+                    print("|cff87CEEB[Thic-Portals]|r Consecutive players who have left the party without payment: " .. consecutiveLeavesWithoutPayment)
 
-                -- Check if the counter reaches 3 and shut down the addon
-                if consecutiveLeavesWithoutPayment >= leaveWithoutPaymentThreshold then
-                    addonEnabled = false
-                    print("Three people in a row left without payment - you are likely AFK. Shutting down the addon.")
-                    toggleAddonEnabled()  -- Update the button text to reflect the shutdown
+                    -- Check if the counter reaches 3 and shut down the addon
+                    if consecutiveLeavesWithoutPayment >= leaveWithoutPaymentThreshold then
+                        addonEnabled = false
+                        print("|cff87CEEB[Thic-Portals]|r Three people in a row left without payment - you are likely AFK. Shutting down the addon.")
+                        toggleAddonEnabled()  -- Update the button text to reflect the shutdown
+                    end
                 end
             end
         end
     elseif event == "TRADE_SHOW" then
         -- Reset the counter when a trade is initiated
         consecutiveLeavesWithoutPayment = 0
-        print("Trade initiated. Resetting consecutive leaves without payment counter.")
+
+        if debugMode then
+            print("|cff87CEEB[Thic-Portals]|r Trade initiated. Resetting consecutive leaves without payment counter.")
+        end
 
         -- NPC is currently the player you're trading
         currentTraderName, currentTraderRealm = UnitName("NPC", true); -- Store the name of the player when the trade window is opened
 
-        print("Current trader: " .. currentTraderName)
+        if debugMode then
+            print("|cff87CEEB[Thic-Portals]|r Current trader: " .. currentTraderName)
+        end
     elseif event == "TRADE_MONEY_CHANGED" then
 		currentTraderMoney = GetTargetTradeMoney();
 	elseif event == "TRADE_ACCEPT_UPDATE" then
@@ -482,15 +758,18 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
                     -- Set a flag regarding their status
                     pendingInvites[currentTraderName].waitingToTravel = true
+                    pendingInvites[currentTraderName].hasPaid = true
 
                     currentTraderName = nil
                     currentTraderMoney = nil
                     currentTraderRealm = nil
                 else
-                    print("No pending invite found for current trader, ignoring transaction.")
+                    if debugMode then
+                        print("|cff87CEEB[Thic-Portals]|r No pending invite found for current trader, ignoring transaction.")
+                    end
                 end
-            else
-                print("No current trader found.")
+            elseif debugMode then
+                print("|cff87CEEB[Thic-Portals]|r No current trader found.")
             end
 		end
     elseif event == "CHAT_MSG_SAY" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_CHANNEL" then
@@ -504,130 +783,30 @@ frame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- Function to create the interface options panel
-local function createOptionsPanel()
-    local panel = CreateFrame("Frame")
-    panel.name = "Thic Portals"
-
-    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16)
-    title:SetText("Thic's Portal Service Configuration")
-
-    -- Addon On/Off Checkbox
-    addonEnabledCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
-    addonEnabledCheckbox:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
-    addonEnabledCheckbox.Text:SetText("Enable Addon")
-    addonEnabledCheckbox:SetChecked(addonEnabled)
-    addonEnabledCheckbox:SetScript("OnClick", function(self)
-        addonEnabled = self:GetChecked()
-        if addonEnabled then
-            print("Addon watching for new trades.")
-        else
-            print("Addon disabled.")
-        end
-    end)
-
-    -- Sound On/Off Checkbox
-    soundEnabledCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
-    soundEnabledCheckbox:SetPoint("TOPLEFT", addonEnabledCheckbox, "BOTTOMLEFT", 0, -8)
-    soundEnabledCheckbox.Text:SetText("Enable Sound")
-    soundEnabledCheckbox:SetChecked(soundEnabled)
-    soundEnabledCheckbox:SetScript("OnClick", function(self)
-        soundEnabled = self:GetChecked()
-        if soundEnabled then
-            print("Sound enabled.")
-        else
-            print("Sound disabled.")
-        end
-    end)
-
-    -- Test Mode Checkbox
-    debugModeCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
-    debugModeCheckbox:SetPoint("TOPLEFT", soundEnabledCheckbox, "BOTTOMLEFT", 0, -8)
-    debugModeCheckbox.Text:SetText("Enable Test Mode")
-    debugModeCheckbox:SetChecked(debugMode)
-    debugModeCheckbox:SetScript("OnClick", function(self)
-        debugMode = self:GetChecked()
-        if debugMode then
-            print("Test mode enabled.")
-        else
-            print("Test mode disabled.")
-        end
-    end)
-
-    InterfaceOptions_AddCategory(panel)
-end
-
--- Create the toggle button
-local toggleButton = CreateFrame("Button", "ToggleButton", UIParent, "UIPanelButtonTemplate");
-toggleButton:SetSize(80, 22); -- Width, Height
-toggleButton:SetText("Closed"); -- Initial text
-toggleButton:SetPoint("CENTER", 0, 200); -- Position on screen
-
--- Create textures for the button colors
-toggleButton:SetNormalTexture("Interface\\Buttons\\WHITE8X8")
-toggleButton:SetHighlightTexture("Interface\\Buttons\\WHITE8X8")
-
--- Make the button moveable
-toggleButton:SetMovable(true);
-toggleButton:EnableMouse(true);
-toggleButton:RegisterForDrag("LeftButton");
-toggleButton:SetScript("OnDragStart", toggleButton.StartMoving);
-toggleButton:SetScript("OnDragStop", toggleButton.StopMovingOrSizing);
-
--- Function to update the button text
-local function toggleAddonEnabled()
-    if addonEnabled then
-        toggleButton:SetText("Open");
-        toggleButton:GetNormalTexture():SetVertexColor(0, 1, 0, 1) -- Set color to green
-    else
-        toggleButton:SetText("Closed");
-        toggleButton:GetNormalTexture():SetVertexColor(0.4, 0.4, 0.4, 1) -- Set color to gray
-    end
-end
-
--- Update the button text initially
-toggleAddonEnabled()
-
--- Script to handle button clicks
-toggleButton:SetScript("OnClick", function(self)
-    addonEnabled = not addonEnabled; -- Toggle the state
-    toggleAddonEnabled(); -- Update the button text
-
-    if addonEnabled then
-        print("Addon enabled.");
-    else
-        print("Addon disabled.");
-    end
-end)
-
--- Create the in game options panel for the addon
-createOptionsPanel()
-
 -- Slash command handler for toggling the addon on/off and debug/live modes
 SLASH_TP1 = "/Tp"
 SlashCmdList["TP"] = function(msg)
     local command, rest = msg:match("^(%S*)%s*(.-)$")
     if command == "on" then
         addonEnabled = true
-        print("Addon enabled.")
+        print("|cff87CEEB[Thic-Portals]|r Addon enabled.")
         addonEnabledCheckbox:SetChecked(true)
     elseif command == "off" then
         addonEnabled = false
-        print("Addon disabled.")
+        print("|cff87CEEB[Thic-Portals]|r Addon disabled.")
         addonEnabledCheckbox:SetChecked(false)
     elseif command == "msg" then
         inviteMessage = rest
-        print("Invite message set to: " .. inviteMessage)
+        print("|cff87CEEB[Thic-Portals]|r Invite message set to: " .. inviteMessage)
     elseif command == "debug" then
         if rest == "on" then
             debugMode = true
-            print("Test mode enabled.")
+            print("|cff87CEEB[Thic-Portals]|r Test mode enabled.")
         elseif rest == "off" then
             debugMode = false
-            print("Test mode disabled.")
+            print("|cff87CEEB[Thic-Portals]|r Test mode disabled.")
         else
-            print("Usage: /Tp debug on/off - Enable or disable debug mode")
+            print("|cff87CEEB[Thic-Portals]|r Usage: /Tp debug on/off - Enable or disable debug mode")
         end
     elseif command == "keywords" then
         local action, keywordType, keyword = rest:match("^(%S*)%s*(%S*)%s*(.-)$")
@@ -640,7 +819,7 @@ SlashCmdList["TP"] = function(msg)
             elseif keywordType == "service" then
                 keywordTable = serviceKeywords
             else
-                print("Invalid keyword type. Use 'intent', 'destination', or 'service'.")
+                print("|cff87CEEB[Thic-Portals]|r Invalid keyword type. Use 'intent', 'destination', or 'service'.")
                 return
             end
             if action == "add" then
@@ -650,15 +829,15 @@ SlashCmdList["TP"] = function(msg)
                 for i, k in ipairs(keywordTable) do
                     if k == keyword then
                         table.remove(keywordTable, i)
-                        print("Removed keyword from " .. keywordType .. ": " .. keyword)
+                        print("|cff87CEEB[Thic-Portals]|r Removed keyword from " .. keywordType .. ": " .. keyword)
                         break
                     end
                 end
             else
-                print("Invalid action. Use 'add' or 'remove'.")
+                print("|cff87CEEB[Thic-Portals]|r Invalid action. Use 'add' or 'remove'.")
             end
         else
-            print("Usage: /Tp keywords add/remove intent/destination/service [keyword]")
+            print("|cff87CEEB[Thic-Portals]|r Usage: /Tp keywords add/remove intent/destination/service [keyword]")
         end
     elseif command == "cooldown" then
         local seconds = tonumber(rest)
@@ -669,7 +848,7 @@ SlashCmdList["TP"] = function(msg)
             print("Usage: /Tp cooldown [seconds] - Set the invite cooldown period")
         end
     elseif command == "help" then
-        print("Usage:")
+        print("|cff87CEEB[Thic-Portals]|r Usage:")
         print("/Tp on - Enable the addon")
         print("/Tp off - Disable the addon")
         print("/Tp msg [message] - Set the invite message")
@@ -679,11 +858,11 @@ SlashCmdList["TP"] = function(msg)
         print("/Tp keywords add/remove intent/destination/service [keyword] - Add or remove a keyword")
         print("/Tp cooldown [seconds] - Set the invite cooldown period")
     elseif command == "author" then
-        print("This addon was created by [Thic-Ashbringer EU].")
+        print("|cff87CEEB[Thic-Portals]|r This addon was created by [Thic-Ashbringer EU].")
     else
-        print("Invalid command. Type /Tp help for usage instructions.")
+        print("|cff87CEEB[Thic-Portals]|r Invalid command. Type /Tp help for usage instructions.")
     end
 end
 
 -- Print message when the addon is loaded
-print("Addon loaded. Type /Tp help for usage instructions.");
+print("Thic-Portals loaded. Type /Tp help for usage instructions or head to settings.");
