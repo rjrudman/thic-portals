@@ -383,8 +383,8 @@ end
 
 -- Function that includes some fluff to the "invite a player" process
 local function invitePlayer(sender)
-    playMatchSound();
     InviteUnit(sender)
+    playMatchSound();
     print("|cff87CEEB[Thic-Portals]|r Invited " .. sender .. " to the group.")
 end
 
@@ -676,7 +676,15 @@ end
 
 -- Event handler function
 frame:SetScript("OnEvent", function(self, event, ...)
-    if event == "VARIABLES_LOADED" then
+    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_CHANNEL" then
+        local message, sender = ...
+        local playerName = extractPlayerName(sender)
+
+        -- Check if addon is enabled
+        if addonEnabled and message and playerName then
+            handleInviteAndMessage(sender, playerName, message)
+        end
+    elseif event == "VARIABLES_LOADED" then
         -- Initialize saved variables
         initializeSavedVariables()
 
@@ -746,7 +754,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
 		currentTraderMoney = GetTargetTradeMoney();
 	elseif event == "TRADE_ACCEPT_UPDATE" then
 		currentTraderMoney = GetTargetTradeMoney();
-	elseif (event == "UI_INFO_MESSAGE") then
+    elseif event == "UI_INFO_MESSAGE" then
 		local type, msg = ...;
 		if (msg == ERR_TRADE_COMPLETE) then
             if currentTraderName then
@@ -772,14 +780,6 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 print("|cff87CEEB[Thic-Portals]|r No current trader found.")
             end
 		end
-    elseif event == "CHAT_MSG_SAY" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_CHANNEL" then
-        local message, sender = ...
-        local playerName = extractPlayerName(sender)
-
-        -- Check if addon is enabled
-        if addonEnabled and message and playerName then
-            handleInviteAndMessage(sender, playerName, message)
-        end
     end
 end)
 
