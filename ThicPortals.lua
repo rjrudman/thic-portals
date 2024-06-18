@@ -31,6 +31,9 @@ local currentTraderName = nil
 local currentTraderRealm = nil
 local currentTraderMoney = nil
 
+-- Config panel
+local optionsPanelHidden = true
+
 -- Config checkboxes
 local addonEnabled = false
 local addonEnabledCheckbox = false;
@@ -475,6 +478,10 @@ local function toggleAddonEnabled()
     end
 end
 
+local function setOptionsPanelHiddenToFalse()
+    optionsPanelHidden = true
+end
+
 local optionsPanel
 local function createOptionsPanel()
     if optionsPanel then
@@ -485,6 +492,7 @@ local function createOptionsPanel()
     local frame = AceGUI:Create("Frame")
 
     frame:SetTitle("Thic-Portals Service Configuration")
+    frame:SetCallback("OnClose", function(widget) setOptionsPanelHiddenToFalse() end)
     frame:SetLayout("Fill")
     frame:SetWidth(480)  -- Set initial width
 
@@ -745,7 +753,10 @@ local function createOptionsPanel()
     createKeywordSection("|cFFFFD700Service Keywords Management|r", ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords)
     scroll:AddChild(largeVerticalGap)
 
+    frame:Hide()
+
     optionsPanel = frame
+
     return optionsPanel
 end
 
@@ -753,12 +764,17 @@ local function showOptionsPanel()
     if not optionsPanel then
         createOptionsPanel()
     end
+    if debugMode then
+        print("|cff87CEEB[Thic-Portals]|r Opening settings...");
+    end
     optionsPanel:Show()
+    optionsPanelHidden = false
 end
 
 local function hideOptionsPanel()
     if optionsPanel then
         optionsPanel:Hide()
+        optionsPanelHidden = true
     end
 end
 
@@ -774,9 +790,12 @@ toggleButton:SetScript("OnMouseUp", function(self, button)
             print("|cff87CEEB[Thic-Portals]|r Addon disabled.");
         end
     elseif button == "RightButton" then
-        print("|cff87CEEB[Thic-Portals]|r Opening settings...");
 
-        showOptionsPanel()
+        if optionsPanelHidden then
+            showOptionsPanel()
+        else
+            hideOptionsPanel()
+        end
     end
 end)
 
