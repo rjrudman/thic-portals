@@ -706,9 +706,11 @@ local function createOptionsPanel()
                 text = text .. keyword .. "\n"
             end
             keywordsText:SetText(text)
-            userListContent:DoLayout() -- Ensure the layout is updated when content changes
-            userListGroup:DoLayout() -- Ensure the layout is updated when content changes
-            scroll:DoLayout() -- Ensure the layout is updated when content changes
+
+            -- Ensure the layout is updated when content changes
+            userListContent:DoLayout()
+            userListGroup:DoLayout()
+            scroll:DoLayout()
         end
 
         updateKeywordsText()
