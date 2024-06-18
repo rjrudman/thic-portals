@@ -475,28 +475,16 @@ local function toggleAddonEnabled()
     end
 end
 
--- Script to handle button clicks
-toggleButton:SetScript("OnMouseUp", function(self, button)
-    if button == "LeftButton" then
-        addonEnabled = not addonEnabled; -- Toggle the state
-        toggleAddonEnabled(); -- Update the button text
-
-        if addonEnabled then
-            print("|cff87CEEB[Thic-Portals]|r Addon enabled.");
-        else
-            print("|cff87CEEB[Thic-Portals]|r Addon disabled.");
-        end
-    elseif button == "RightButton" then
-        print("|cff87CEEB[Thic-Portals]|r Opening settings...");
-        createOptionsPanel()
-    end
-end)
-
+local optionsPanel
 local function createOptionsPanel()
+    if optionsPanel then
+        return optionsPanel
+    end
+
     -- Create a container frame
     local frame = AceGUI:Create("Frame")
+
     frame:SetTitle("Thic-Portals Service Configuration")
-    frame:SetCallback("OnClose", function(widget) AceGUI:Release(widget) end)
     frame:SetLayout("Fill")
     frame:SetWidth(480)  -- Set initial width
 
@@ -704,7 +692,7 @@ local function createOptionsPanel()
         local userListContent = AceGUI:Create("SimpleGroup")
         userListContent:SetFullWidth(true)
         userListContent:SetLayout("List")
-        userListContent:SetWidth(200)
+        userListContent:SetAutoAdjustHeight(true) -- Adjust height automatically
         userListGroup:AddChild(userListContent)
 
         -- Keywords Text Label
@@ -718,6 +706,9 @@ local function createOptionsPanel()
                 text = text .. keyword .. "\n"
             end
             keywordsText:SetText(text)
+            userListContent:DoLayout() -- Ensure the layout is updated when content changes
+            userListGroup:DoLayout() -- Ensure the layout is updated when content changes
+            scroll:DoLayout() -- Ensure the layout is updated when content changes
         end
 
         updateKeywordsText()
@@ -751,7 +742,41 @@ local function createOptionsPanel()
     scroll:AddChild(largeVerticalGap)
     createKeywordSection("|cFFFFD700Service Keywords Management|r", ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords)
     scroll:AddChild(largeVerticalGap)
+
+    optionsPanel = frame
+    return optionsPanel
 end
+
+local function showOptionsPanel()
+    if not optionsPanel then
+        createOptionsPanel()
+    end
+    optionsPanel:Show()
+end
+
+local function hideOptionsPanel()
+    if optionsPanel then
+        optionsPanel:Hide()
+    end
+end
+
+-- Script to handle button clicks
+toggleButton:SetScript("OnMouseUp", function(self, button)
+    if button == "LeftButton" then
+        addonEnabled = not addonEnabled; -- Toggle the state
+        toggleAddonEnabled(); -- Update the button text
+
+        if addonEnabled then
+            print("|cff87CEEB[Thic-Portals]|r Addon enabled.");
+        else
+            print("|cff87CEEB[Thic-Portals]|r Addon disabled.");
+        end
+    elseif button == "RightButton" then
+        print("|cff87CEEB[Thic-Portals]|r Opening settings...");
+
+        showOptionsPanel()
+    end
+end)
 
 -- Initialize saved variables
 local function initializeSavedVariables()
