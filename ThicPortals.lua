@@ -1,6 +1,8 @@
+local AceGUI = LibStub("AceGUI-3.0")
+
 local inviteMessage = "Good day! I am creating a portal for you as we speak, please head over - I'm marked with a star."
-local inviteMessageWithoutDestination = "Good day! Please specify a destination and I will create a portal for you."
-local tipMessage = "Thank you for your tip. Enjoy your journey and thanks for choosing Thic-Portals. Safe travels!"
+local inviteMessageWithoutDestination = "[Thic-Portals] Good day! Please specify a destination and I will create a portal for you."
+local tipMessage = "[Thic-Portals] Thank you for your tip, enjoy your journey - safe travels!"
 local noTipMessage = "Enjoy your journey and thanks for choosing Thic-Portals. Safe travels!"
 local commonPhrases = {
     "wtb mage port",
@@ -16,9 +18,7 @@ local commonPhrases = {
     "wtb portal",
     "wtb port"
 }
-local intentKeywords = {"wtb", "wtf", "want to buy", "looking for", "need", "seeking", "buying", "purchasing", "lf", "can anyone make", "can you make", "can anyone do", "can you do"}
-local destinationKeywords = {"darn", "darnassuss", "darnas", "darrna", "darnaas", "darnassus", "darnasuss", "dalaran", "darna", "darnasus", "sw", "stormwind", "if", "ironforge"}
-local serviceKeywords = {"portal", "port", "prt", "portla", "pportal", "protal", "pport", "teleport", "tp", "tele"}
+local fixedLabelWidth = 150 -- Set a fixed width for the labels
 
 -- Invite and trade related data
 local pendingInvites = {} -- Table to store pending invites with all relevant data
@@ -30,7 +30,6 @@ local leaveWithoutPaymentThreshold = 2;
 local currentTraderName = nil
 local currentTraderRealm = nil
 local currentTraderMoney = nil
-local banList = {"Seduce", "Skrill"}
 
 -- Config checkboxes
 local addonEnabled = false
@@ -42,6 +41,10 @@ local debugModeCheckbox = false;
 
 -- Initialize saved variables
 ThicPortalsSaved = false
+BanList = false
+IntentKeywords = false
+DestinationKeywords = false
+ServiceKeywords = false
 
 -- Our global frame
 local frame = CreateFrame("Frame")
@@ -108,15 +111,9 @@ local function updateDistanceLabel(sender, distanceLabel)
     end)
 end
 
--- Function to add a player to the ban list
-local function addToBanList(player)
-    table.insert(banList, player)
-    print("|cff87CEEB[Thic-Portals]|r " .. player .. " has been added to the ban list.")
-end
-
 -- Function to check if a player is on the ban list
 local function isPlayerBanned(player)
-    for _, bannedPlayer in ipairs(banList) do
+    for _, bannedPlayer in ipairs(BanList) do
         if bannedPlayer == player then
             return true
         end
@@ -188,7 +185,7 @@ end
 
 -- Function to update the destination of a pending invite
 local function updatePendingInviteDestination(playerName, message)
-    local destinationPosition, destinationKeyword = findKeywordPosition(message, destinationKeywords);
+    local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords);
     if destinationPosition and pendingInvites[playerName] then
         pendingInvites[playerName].destination = destinationKeyword;
         if pendingInvites[playerName].destinationValue then
@@ -400,7 +397,7 @@ local function handleInviteAndMessage(sender, playerName, message)
         if not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown then
             invitePlayer(sender);
             -- Record the time and track the invite as pending
-            local destinationPosition, destinationKeyword = findKeywordPosition(message, destinationKeywords);
+            local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords);
             pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, hasPaid = false, travelled = false, fullName = sender};
             setSenderExpiryTimer(playerName);
         else
@@ -408,11 +405,11 @@ local function handleInviteAndMessage(sender, playerName, message)
         end
     else
         -- Handle advanced keyword detection
-        local intentPosition, intentKeyword = findKeywordPosition(message, intentKeywords);
+        local intentPosition, intentKeyword = findKeywordPosition(message, IntentKeywords);
         if intentPosition then
 
-            local servicePosition, serviceKeyword = findKeywordPosition(message, serviceKeywords)
-            local destinationPosition, destinationKeyword = findKeywordPosition(message, destinationKeywords)
+            local servicePosition, serviceKeyword = findKeywordPosition(message, ServiceKeywords)
+            local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
 
             -- Proceed only if intent is found first
             if (servicePosition and servicePosition > intentPosition) then
@@ -433,7 +430,14 @@ local function handleInviteAndMessage(sender, playerName, message)
     updatePendingInviteDestination(playerName, message);
 end
 
-
+-- Function to set the min width allowed of a frame
+local function SetMinWidth(frame, minWidth)
+    frame.frame:SetScript("OnSizeChanged", function(self, width, height)
+        if width < minWidth then
+            frame:SetWidth(minWidth)
+        end
+    end)
+end
 
 -- Create the toggle button
 local toggleButton = CreateFrame("Button", "ToggleButton", UIParent, "UIPanelButtonTemplate");
@@ -445,14 +449,6 @@ toggleButton:DisableDrawLayer("BACKGROUND")
 toggleButton:DisableDrawLayer("BORDER")
 toggleButton:DisableDrawLayer("ARTWORK")
 
--- Create the background texture
-local backgroundTexture = toggleButton:CreateTexture(nil, "OVERLAY")
-backgroundTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
-backgroundTexture:SetAllPoints(toggleButton)
-
--- Flip the texture vertically
-backgroundTexture:SetTexCoord(0, 1, 1, 0)
-
 -- Make the button moveable
 toggleButton:SetMovable(true);
 toggleButton:EnableMouse(true);
@@ -460,15 +456,21 @@ toggleButton:RegisterForDrag("LeftButton");
 toggleButton:SetScript("OnDragStart", toggleButton.StartMoving);
 toggleButton:SetScript("OnDragStop", toggleButton.StopMovingOrSizing);
 
--- Function to update the button text and color
+-- Create the background texture
+local toggleButtonOverlayTexture = toggleButton:CreateTexture(nil, "OVERLAY")
+toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
+toggleButtonOverlayTexture:SetAllPoints(toggleButton)
+toggleButtonOverlayTexture:SetTexCoord(0, 1, 1, 0)
+
+-- Function to update the button text and color of the interface configuration options
 local function toggleAddonEnabled()
     if addonEnabled then
-        backgroundTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsopen.tga") -- Replace with the path to your image
-        addonEnabledCheckbox:SetChecked(true)
+        toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsopen.tga") -- Replace with the path to your image
+        addonEnabledCheckbox:SetValue(true)
         print("|cff87CEEB[Thic-Portals]|r The portal shop is open!")
     else
-        backgroundTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
-        addonEnabledCheckbox:SetChecked(false)
+        toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
+        addonEnabledCheckbox:SetValue(false)
         print("|cff87CEEB[Thic-Portals]|r You closed the shop.")
     end
 end
@@ -486,186 +488,291 @@ toggleButton:SetScript("OnMouseUp", function(self, button)
         end
     elseif button == "RightButton" then
         print("|cff87CEEB[Thic-Portals]|r Opening settings...");
-
-        InterfaceAddOnsList_Update();
-        InterfaceOptionsFrame_OpenToCategory("Thic-Portals")
-        InterfaceOptionsFrame_OpenToCategory("Thic-Portals")
+        createOptionsPanel()
     end
 end)
 
 local function createOptionsPanel()
-    local panel = CreateFrame("Frame")
-    panel.name = "Thic-Portals"
+    -- Create a container frame
+    local frame = AceGUI:Create("Frame")
+    frame:SetTitle("Thic-Portals Service Configuration")
+    frame:SetCallback("OnClose", function(widget) AceGUI:Release(widget) end)
+    frame:SetLayout("Fill")
+    frame:SetWidth(480)  -- Set initial width
 
-    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16)
-    title:SetText("Thic-Portals Service Configuration")
+    SetMinWidth(frame, 480)  -- Ensure the width never goes below 1200 pixels
 
+    local largeVerticalGap = AceGUI:Create("Label")
+    largeVerticalGap:SetText("\n\n")
+    largeVerticalGap:SetFullWidth(true)
+
+    local smallVerticalGap = AceGUI:Create("Label")
+    smallVerticalGap:SetText("\n")
+    smallVerticalGap:SetFullWidth(true)
+
+    local tinyVerticalGap = AceGUI:Create("Label")
+    tinyVerticalGap:SetText("")
+    tinyVerticalGap:SetFullWidth(true)
+
+    -- Create a scroll frame
+    local scrollcontainer = AceGUI:Create("SimpleGroup")
+    scrollcontainer:SetFullWidth(true)
+    scrollcontainer:SetFullHeight(true)
+    scrollcontainer:SetLayout("Fill")
+
+    frame:AddChild(scrollcontainer)
+
+    local scroll = AceGUI:Create("ScrollFrame")
+    scroll:SetLayout("Flow")
+    scrollcontainer:AddChild(scroll)
+
+    -- General Settings Title
+    local generalSettingsTitle = AceGUI:Create("Label")
+    generalSettingsTitle:SetText("|cFFFFD700General Settings|r")
+    generalSettingsTitle:SetFontObject(GameFontNormalLarge)
+    generalSettingsTitle:SetFullWidth(true)
+    scroll:AddChild(generalSettingsTitle)
+    scroll:AddChild(largeVerticalGap)
+
+    -- Create a group for the checkboxes
+    local checkboxGroup = AceGUI:Create("SimpleGroup")
+    checkboxGroup:SetFullWidth(true)
+    checkboxGroup:SetLayout("Flow")
+
+    -- Add spacer before checkboxes
+    local spacer = AceGUI:Create("Label")
+    spacer:SetWidth(30)
+    checkboxGroup:AddChild(spacer)
     -- Addon On/Off Checkbox
-    addonEnabledCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
-    addonEnabledCheckbox:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -25)
-    addonEnabledCheckbox.Text:SetText("Enable Addon")
-    addonEnabledCheckbox:SetChecked(addonEnabled)
-    addonEnabledCheckbox:SetScript("OnClick", function(self)
-        addonEnabled = self:GetChecked()
+    addonEnabledCheckbox = AceGUI:Create("CheckBox")
+    addonEnabledCheckbox:SetLabel("Enable Addon")
+    addonEnabledCheckbox:SetValue(addonEnabled)
+    addonEnabledCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+        addonEnabled = value
         toggleAddonEnabled()
     end)
+    checkboxGroup:AddChild(addonEnabledCheckbox)
+    checkboxGroup:AddChild(tinyVerticalGap)
 
+    -- Add spacer between checkboxes
+    local spacerBetween2 = AceGUI:Create("Label")
+    spacerBetween2:SetWidth(30)
+    checkboxGroup:AddChild(spacerBetween2)
     -- Sound On/Off Checkbox
-    soundEnabledCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
-    soundEnabledCheckbox:SetPoint("TOPLEFT", addonEnabledCheckbox, "BOTTOMLEFT", 0, -8)
-    soundEnabledCheckbox.Text:SetText("Enable Sound")
-    soundEnabledCheckbox:SetChecked(soundEnabled)
-    soundEnabledCheckbox:SetScript("OnClick", function(self)
-        soundEnabled = self:GetChecked()
+    soundEnabledCheckbox = AceGUI:Create("CheckBox")
+    soundEnabledCheckbox:SetLabel("Enable Sound")
+    soundEnabledCheckbox:SetValue(soundEnabled)
+    soundEnabledCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+        soundEnabled = value
         if soundEnabled then
             print("|cff87CEEB[Thic-Portals]|r Sound enabled.")
         else
             print("|cff87CEEB[Thic-Portals]|r Sound disabled.")
         end
     end)
+    checkboxGroup:AddChild(soundEnabledCheckbox)
+    checkboxGroup:AddChild(tinyVerticalGap)
 
+    -- Add spacer between checkboxes
+    local spacerBetween3 = AceGUI:Create("Label")
+    spacerBetween3:SetWidth(30)
+    checkboxGroup:AddChild(spacerBetween3)
     -- Debug Mode Checkbox
-    debugModeCheckbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
-    debugModeCheckbox:SetPoint("TOPLEFT", soundEnabledCheckbox, "BOTTOMLEFT", 0, -8)
-    debugModeCheckbox.Text:SetText("Enable Debug Mode")
-    debugModeCheckbox:SetChecked(debugMode)
-    debugModeCheckbox:SetScript("OnClick", function(self)
-        debugMode = self:GetChecked()
+    debugModeCheckbox = AceGUI:Create("CheckBox")
+    debugModeCheckbox:SetLabel("Enable Debug Mode")
+    debugModeCheckbox:SetValue(debugMode)
+    debugModeCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+        debugMode = value
         if debugMode then
             print("|cff87CEEB[Thic-Portals]|r Test mode enabled.")
         else
             print("|cff87CEEB[Thic-Portals]|r Test mode disabled.")
         end
     end)
+    checkboxGroup:AddChild(debugModeCheckbox)
 
-    -- Gold Stats Section Title
-    local goldStatsTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    goldStatsTitle:SetPoint("TOPLEFT", debugModeCheckbox, "BOTTOMLEFT", 0, -30)
-    goldStatsTitle:SetText("Gold Statistics")
+    scroll:AddChild(checkboxGroup)
 
-    -- Total Gold Earned
-    local totalGoldLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    totalGoldLabel:SetPoint("TOPLEFT", goldStatsTitle, "BOTTOMLEFT", 5, -30)
-    totalGoldLabel:SetText("Total Gold Earned:")
+    scroll:AddChild(smallVerticalGap)
+    scroll:AddChild(largeVerticalGap)
 
-    local totalGoldValue = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    totalGoldValue:SetPoint("LEFT", totalGoldLabel, "RIGHT", 8, 0)
-    totalGoldValue:SetText(string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.totalGold / 10000), math.floor((ThicPortalsSaved.totalGold % 10000) / 100), ThicPortalsSaved.totalGold % 100))
+    -- Gold Stats Section
+    local goldStatsTitle = AceGUI:Create("Label")
+    goldStatsTitle:SetText("|cFFFFD700Gold Statistics|r")
+    goldStatsTitle:SetFontObject(GameFontNormalLarge)
+    goldStatsTitle:SetFullWidth(true)
+    scroll:AddChild(goldStatsTitle)
+    scroll:AddChild(largeVerticalGap)
 
-    -- Gold Earned Today
-    local dailyGoldLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    dailyGoldLabel:SetPoint("TOPLEFT", totalGoldLabel, "BOTTOMLEFT", 0, -8)
-    dailyGoldLabel:SetText("Gold Earned Today:")
+    -- Helper function to create a label-value pair with a fixed label width and bold value
+    local function createLabelValuePair(labelText, valueText)
+        local group = AceGUI:Create("SimpleGroup")
+        group:SetFullWidth(true)
+        group:SetLayout("Flow")
 
-    local dailyGoldValue = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    dailyGoldValue:SetPoint("LEFT", dailyGoldLabel, "RIGHT", 8, 0)
-    dailyGoldValue:SetText(string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.dailyGold / 10000), math.floor((ThicPortalsSaved.dailyGold % 10000) / 100), ThicPortalsSaved.dailyGold % 100))
+        local spacer = AceGUI:Create("Label")
+        spacer:SetWidth(30)
+        group:AddChild(spacer)
 
-    -- Total Trades Completed
-    local totalTradesLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    totalTradesLabel:SetPoint("TOPLEFT", dailyGoldLabel, "BOTTOMLEFT", 0, -8)
-    totalTradesLabel:SetText("Total Trades Completed:")
+        local label = AceGUI:Create("Label")
+        label:SetText(labelText)
+        label:SetWidth(fixedLabelWidth)
+        group:AddChild(label)
 
-    local totalTradesValue = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    totalTradesValue:SetPoint("LEFT", totalTradesLabel, "RIGHT", 8, 0)
-    totalTradesValue:SetText(ThicPortalsSaved.totalTradesCompleted)
+        local value = AceGUI:Create("Label")
+        value:SetText("|cFFFFD700" .. valueText .. "|r") -- Make the value bold
+        group:AddChild(value)
 
-    -- Ban List Section Title
-    local banListTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    banListTitle:SetPoint("TOPLEFT", totalTradesLabel, "BOTTOMLEFT", -5, -40)
-    banListTitle:SetText("Ban List Management")
-
-    -- Ban List EditBox
-    local banListEditBox = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
-    banListEditBox:SetSize(180, 20)
-    banListEditBox:SetPoint("TOPLEFT", banListTitle, "BOTTOMLEFT", 0, -8)
-    banListEditBox:SetAutoFocus(false)
-    banListEditBox:SetScript("OnEnterPressed", function(self)
-        local playerName = self:GetText()
-        if playerName ~= "" then
-            addToBanList(playerName)
-            self:SetText("")
-        end
-    end)
-
-    -- Ban List Add Button
-    local addButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    addButton:SetSize(60, 20)
-    addButton:SetPoint("LEFT", banListEditBox, "RIGHT", 8, 0)
-    addButton:SetText("Add")
-    addButton:SetScript("OnClick", function()
-        local playerName = banListEditBox:GetText()
-        if playerName ~= "" then
-            addToBanList(playerName)
-            banListEditBox:SetText("")
-        end
-    end)
-
-    -- Ban List Remove Button
-    local removeButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    removeButton:SetSize(60, 20)
-    removeButton:SetPoint("TOPLEFT", banListEditBox, "BOTTOMLEFT", 0, -8)
-    removeButton:SetText("Remove")
-    removeButton:SetScript("OnClick", function()
-        local playerName = banListEditBox:GetText()
-        if playerName ~= "" then
-            removeFromBanList(playerName)
-            banListEditBox:SetText("")
-        end
-    end)
-
-    -- Ban List ScrollFrame
-    local scrollFrame = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetSize(180, 100)
-    scrollFrame:SetPoint("TOPLEFT", removeButton, "BOTTOMLEFT", 0, -8)
-
-    local scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    scrollChild:SetSize(180, 100)
-    scrollFrame:SetScrollChild(scrollChild)
-
-    local banListText = scrollChild:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    banListText:SetPoint("TOPLEFT")
-    banListText:SetJustifyH("LEFT")
-
-    local function updateBanListText()
-        local text = ""
-        for _, player in ipairs(banList) do
-            text = text .. player .. "\n"
-        end
-        banListText:SetText(text)
+        return group
     end
 
-    updateBanListText()
+    -- Add label-value pairs to the scroll frame
+    local totalGoldLabel = createLabelValuePair("Total Gold Earned:", string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.totalGold / 10000), math.floor((ThicPortalsSaved.totalGold % 10000) / 100), ThicPortalsSaved.totalGold % 100))
+    scroll:AddChild(totalGoldLabel)
+    scroll:AddChild(smallVerticalGap)
 
-    -- Add to Ban List Function
-    function addToBanList(player)
-        if not isPlayerBanned(player) then
-            table.insert(banList, player)
-            updateBanListText()
-            print("|cff87CEEB[Thic-Portals]|r " .. player .. " has been added to the ban list.")
+    local dailyGoldLabel = createLabelValuePair("Gold Earned Today:", string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.dailyGold / 10000), math.floor((ThicPortalsSaved.dailyGold % 10000) / 100), ThicPortalsSaved.dailyGold % 100))
+    scroll:AddChild(dailyGoldLabel)
+    scroll:AddChild(smallVerticalGap)
+
+    local totalTradesLabel = createLabelValuePair("Total Trades Completed:", ThicPortalsSaved.totalTradesCompleted)
+    scroll:AddChild(totalTradesLabel)
+    scroll:AddChild(largeVerticalGap)
+    scroll:AddChild(largeVerticalGap)
+
+    -- Function to create keyword management section
+    local function createKeywordSection(titleText, keywords, addFunc, removeFunc)
+        local sectionTitle = AceGUI:Create("Label")
+        sectionTitle:SetText(titleText)
+        sectionTitle:SetFontObject(GameFontNormalLarge)
+        sectionTitle:SetFullWidth(true)
+        scroll:AddChild(sectionTitle)
+
+        -- Create an InlineGroup for keyword management
+        local keywordGroup = AceGUI:Create("InlineGroup")
+        keywordGroup:SetFullWidth(true)
+        keywordGroup:SetLayout("Flow")
+        scroll:AddChild(keywordGroup)
+
+        -- Add/Remove Keyword EditBox
+        local editBox = AceGUI:Create("EditBox")
+        editBox:SetLabel("Add/Remove Keyword")
+        editBox:SetWidth(200)
+        editBox:DisableButton(true)
+        editBox:SetCallback("OnEnterPressed", function(widget, event, text)
+            if text ~= "" then
+                addFunc(text)
+                widget:SetText("")
+            end
+        end)
+        keywordGroup:AddChild(editBox)
+
+        -- Add Button
+        local addButton = AceGUI:Create("Button")
+        addButton:SetText("Add")
+        addButton:SetWidth(100)
+        addButton:SetCallback("OnClick", function()
+            local keyword = editBox:GetText()
+            if keyword ~= "" then
+                addFunc(keyword)
+                editBox:SetText("")
+            end
+        end)
+        keywordGroup:AddChild(addButton)
+
+        -- Remove Button
+        local removeButton = AceGUI:Create("Button")
+        removeButton:SetText("Remove")
+        removeButton:SetWidth(100)
+        removeButton:SetCallback("OnClick", function()
+            local keyword = editBox:GetText()
+            if keyword ~= "" then
+                removeFunc(keyword)
+                editBox:SetText("")
+            end
+        end)
+        keywordGroup:AddChild(removeButton)
+
+        -- Internal panel for user list with padding
+        local userListGroup = AceGUI:Create("InlineGroup")
+        userListGroup:SetFullWidth(true)
+        userListGroup:SetLayout("Flow")
+        userListGroup:SetAutoAdjustHeight(true)
+        keywordGroup:AddChild(userListGroup)
+
+        -- Add padding to the internal panel
+        local userListContent = AceGUI:Create("SimpleGroup")
+        userListContent:SetFullWidth(true)
+        userListContent:SetLayout("List")
+        userListContent:SetWidth(200)
+        userListGroup:AddChild(userListContent)
+
+        -- Keywords Text Label
+        local keywordsText = AceGUI:Create("Label")
+        keywordsText:SetFullWidth(true)
+        userListContent:AddChild(keywordsText)
+
+        local function updateKeywordsText()
+            local text = ""
+            for _, keyword in ipairs(keywords) do
+                text = text .. keyword .. "\n"
+            end
+            keywordsText:SetText(text)
         end
-    end
 
-    -- Remove from Ban List Function
-    function removeFromBanList(player)
-        for i, bannedPlayer in ipairs(banList) do
-            if bannedPlayer == player then
-                table.remove(banList, i)
-                updateBanListText()
-                print("|cff87CEEB[Thic-Portals]|r " .. player .. " has been removed from the ban list.")
-                break
+        updateKeywordsText()
+
+        -- Add to Keywords Function
+        function addFunc(keyword)
+            table.insert(keywords, keyword)
+            updateKeywordsText()
+            print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been added.")
+        end
+
+        -- Remove from Keywords Function
+        function removeFunc(keyword)
+            for i, k in ipairs(keywords) do
+                if k == keyword then
+                    table.remove(keywords, i)
+                    updateKeywordsText()
+                    print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been removed.")
+                    break
+                end
             end
         end
     end
 
-    InterfaceOptions_AddCategory(panel)
+    -- Creating Keyword Sections
+    createKeywordSection("|cFFFFD700Ban List Management|r", BanList, addToBanListKeywords, removeFromBanListKeywords)
+    scroll:AddChild(largeVerticalGap)
+    createKeywordSection("|cFFFFD700Intent Keywords Management|r", IntentKeywords, addToIntentKeywords, removeFromIntentKeywords)
+    scroll:AddChild(largeVerticalGap)
+    createKeywordSection("|cFFFFD700Destination Keywords Management|r", DestinationKeywords, addToDestinationKeywords, removeFromDestinationKeywords)
+    scroll:AddChild(largeVerticalGap)
+    createKeywordSection("|cFFFFD700Service Keywords Management|r", ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords)
+    scroll:AddChild(largeVerticalGap)
 end
 
 -- Initialize saved variables
 local function initializeSavedVariables()
     if type(ThicPortalsSaved) ~= "table" then
         ThicPortalsSaved = {}
+    end
+
+    if type(BanList) ~= "table" then
+        BanList = {}
+    end
+
+    if type(IntentKeywords) ~= "table" then
+        IntentKeywords = {"wtb", "wtf", "want to buy", "looking for", "need", "seeking", "buying", "purchasing", "lf", "can anyone make", "can you make", "can anyone do", "can you do"}
+    end
+
+    if type(DestinationKeywords) ~= "table" then
+        DestinationKeywords = {"darn", "darnassuss", "darnas", "darrna", "darnaas", "darnassus", "darnasuss", "dalaran", "darna", "darnasus", "sw", "stormwind", "if", "ironforge"}
+    end
+
+    if type(ServiceKeywords) ~= "table" then
+        ServiceKeywords = {"portal", "port", "prt", "portla", "pportal", "protal", "pport", "teleport", "tp", "tele"}
     end
 
     ThicPortalsSaved.totalGold = ThicPortalsSaved.totalGold or 0
@@ -790,11 +897,11 @@ SlashCmdList["TP"] = function(msg)
     if command == "on" then
         addonEnabled = true
         print("|cff87CEEB[Thic-Portals]|r Addon enabled.")
-        addonEnabledCheckbox:SetChecked(true)
+        addonEnabledCheckbox:SetValue(true)
     elseif command == "off" then
         addonEnabled = false
         print("|cff87CEEB[Thic-Portals]|r Addon disabled.")
-        addonEnabledCheckbox:SetChecked(false)
+        addonEnabledCheckbox:SetValue(false)
     elseif command == "msg" then
         inviteMessage = rest
         print("|cff87CEEB[Thic-Portals]|r Invite message set to: " .. inviteMessage)
@@ -813,11 +920,11 @@ SlashCmdList["TP"] = function(msg)
         if action and keywordType and keyword and keyword ~= "" then
             local keywordTable
             if keywordType == "intent" then
-                keywordTable = intentKeywords
+                keywordTable = IntentKeywords
             elseif keywordType == "destination" then
-                keywordTable = destinationKeywords
+                keywordTable = DestinationKeywords
             elseif keywordType == "service" then
-                keywordTable = serviceKeywords
+                keywordTable = ServiceKeywords
             else
                 print("|cff87CEEB[Thic-Portals]|r Invalid keyword type. Use 'intent', 'destination', or 'service'.")
                 return
