@@ -1,9 +1,16 @@
 local AceGUI = LibStub("AceGUI-3.0")
 
-local inviteMessage = "Good day! I am creating a portal for you as we speak, please head over - I'm marked with a star."
-local inviteMessageWithoutDestination = "[Thic-Portals] Good day! Please specify a destination and I will create a portal for you."
-local tipMessage = "[Thic-Portals] Thank you for your tip, enjoy your journey - safe travels!"
-local noTipMessage = "Enjoy your journey and thanks for choosing Thic-Portals. Safe travels!"
+-- Initialize saved variables
+InviteMessage = "[Thic-Portals] Good day! I am creating a portal for you as we speak, please head over - I'm marked with a star."
+InviteMessageWithoutDestination = "[Thic-Portals] Good day! Please specify a destination and I will create a portal for you."
+TipMessage = "[Thic-Portals] Thank you for your tip, enjoy your journey - safe travels!"
+NoTipMessage = "[Thic-Portals] Enjoy your journey and thanks for choosing Thic-Portals. Safe travels!"
+ThicPortalsSaved = false
+BanList = false
+IntentKeywords = false
+DestinationKeywords = false
+ServiceKeywords = false
+
 local commonPhrases = {
     "wtb mage port",
     "wtb mage portal",
@@ -41,13 +48,6 @@ local soundEnabled = true
 local soundEnabledCheckbox = true;
 local debugMode = false
 local debugModeCheckbox = false;
-
--- Initialize saved variables
-ThicPortalsSaved = false
-BanList = false
-IntentKeywords = false
-DestinationKeywords = false
-ServiceKeywords = false
 
 -- Our global frame
 local frame = CreateFrame("Frame")
@@ -636,6 +636,78 @@ local function createOptionsPanel()
     scroll:AddChild(largeVerticalGap)
     scroll:AddChild(largeVerticalGap)
 
+    -- Message Configuration Title
+    local messageConfigTitle = AceGUI:Create("Label")
+    messageConfigTitle:SetText("|cFFFFD700Message Configuration|r")
+    messageConfigTitle:SetFontObject(GameFontNormalLarge)
+    messageConfigTitle:SetFullWidth(true)
+    scroll:AddChild(messageConfigTitle)
+    scroll:AddChild(largeVerticalGap)
+
+    -- Helper function to create a label and editbox pair
+    local function createLabelEditBoxPair(labelText, messageVar, callback)
+        local group = AceGUI:Create("SimpleGroup")
+        group:SetFullWidth(true)
+        group:SetLayout("Flow")
+
+        local label = AceGUI:Create("Label")
+        label:SetText(labelText)
+        label:SetWidth(300)
+        group:AddChild(label)
+
+        local editBoxGroup = AceGUI:Create("SimpleGroup")
+        editBoxGroup:SetWidth(330)
+        editBoxGroup:SetLayout("Flow")
+
+        local spacer = AceGUI:Create("Label")
+        spacer:SetWidth(20)
+        editBoxGroup:AddChild(spacer)
+
+        local editBox = AceGUI:Create("EditBox")
+        editBox:SetText(messageVar)
+        editBox:SetWidth(310)
+        editBox:SetCallback("OnEnterPressed", function(_, _, text)
+            callback(text)
+        end)
+        editBoxGroup:AddChild(editBox)
+
+        group:AddChild(editBoxGroup)
+
+        return group
+    end
+
+    -- Invite Message
+    local inviteMessageGroup = createLabelEditBoxPair("Invite Message:", InviteMessage, function(text)
+        InviteMessage = text
+        print("|cff87CEEB[Thic-Portals]|r Invite message updated.")
+    end)
+    scroll:AddChild(inviteMessageGroup)
+    scroll:AddChild(smallVerticalGap)
+
+    -- Invite Message Without Destination
+    local inviteMessageWithoutDestinationGroup = createLabelEditBoxPair("Invite Message (No Destination):", InviteMessageWithoutDestination, function(text)
+        InviteMessageWithoutDestination = text
+        print("|cff87CEEB[Thic-Portals]|r Invite message without destination updated.")
+    end)
+    scroll:AddChild(inviteMessageWithoutDestinationGroup)
+    scroll:AddChild(smallVerticalGap)
+
+    -- Tip Message
+    local tipMessageGroup = createLabelEditBoxPair("Tip Message:", TipMessage, function(text)
+        TipMessage = text
+        print("|cff87CEEB[Thic-Portals]|r Tip message updated.")
+    end)
+    scroll:AddChild(tipMessageGroup)
+    scroll:AddChild(smallVerticalGap)
+
+    -- No Tip Message
+    local noTipMessageGroup = createLabelEditBoxPair("No Tip Message:", NoTipMessage, function(text)
+        NoTipMessage = text
+        print("|cff87CEEB[Thic-Portals]|r No tip message updated.")
+    end)
+    scroll:AddChild(noTipMessageGroup)
+    scroll:AddChild(largeVerticalGap)
+
     -- Function to create keyword management section
     local function createKeywordSection(titleText, keywords, addFunc, removeFunc)
         local sectionTitle = AceGUI:Create("Label")
@@ -856,9 +928,9 @@ frame:SetScript("OnEvent", function(self, event, ...)
                 displayTicketWindow(sender, inviteData.destination)
 
                 if inviteData.destination then
-                    SendChatMessage(inviteMessage, "WHISPER", nil, inviteData.fullName)
+                    SendChatMessage(InviteMessage, "WHISPER", nil, inviteData.fullName)
                 else
-                    SendChatMessage(inviteMessageWithoutDestination, "WHISPER", nil, inviteData.fullName)
+                    SendChatMessage(InviteMessageWithoutDestination, "WHISPER", nil, inviteData.fullName)
                 end
 
                 markSelfWithStar() -- Mark yourself with a star
@@ -912,7 +984,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
 		if (msg == ERR_TRADE_COMPLETE) then
             if currentTraderName then
                 if pendingInvites[currentTraderName] then
-                    local messageToSend = checkTradeTip() and tipMessage or noTipMessage
+                    local messageToSend = checkTradeTip() and TipMessage or NoTipMessage
 
                     -- Send them a thank you!
                     SendChatMessage(messageToSend, "WHISPER", nil, pendingInvites[currentTraderName].fullName)
@@ -949,8 +1021,8 @@ SlashCmdList["TP"] = function(msg)
         print("|cff87CEEB[Thic-Portals]|r Addon disabled.")
         addonEnabledCheckbox:SetValue(false)
     elseif command == "msg" then
-        inviteMessage = rest
-        print("|cff87CEEB[Thic-Portals]|r Invite message set to: " .. inviteMessage)
+        InviteMessage = rest
+        print("|cff87CEEB[Thic-Portals]|r Invite message set to: " .. InviteMessage)
     elseif command == "debug" then
         if rest == "on" then
             debugMode = true
