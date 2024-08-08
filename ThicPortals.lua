@@ -42,6 +42,8 @@ local currentTraderMoney = nil
 local optionsPanelHidden = true
 
 -- Config checkboxes
+local hideIcon = false
+local hideIconCheckbox = false
 local addonEnabled = false
 local addonEnabledCheckbox = false;
 local soundEnabled = true
@@ -586,6 +588,24 @@ local function createOptionsPanel()
         end
     end)
     checkboxGroup:AddChild(debugModeCheckbox)
+
+    -- Add spacer between checkboxes
+    local spacerBetween4 = AceGUI:Create("Label")
+    spacerBetween4:SetWidth(30)
+    checkboxGroup:AddChild(spacerBetween4)
+    -- Hide Icon Checkbox
+    hideIconCheckbox = AceGUI:Create("CheckBox")
+    hideIconCheckbox:SetLabel("Hide Open/Closed Icon")
+    hideIconCheckbox:SetValue(debugMode)
+    hideIconCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+        hideIcon = value
+        if hideIcon then
+            print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked visible.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked hidden.")
+        end
+    end)
+    checkboxGroup:AddChild(hideIconCheckbox)
 
     scroll:AddChild(checkboxGroup)
 
