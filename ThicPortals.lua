@@ -1076,6 +1076,9 @@ frame:SetScript("OnEvent", function(self, event, ...)
         for sender, inviteData in pairs(pendingInvites) do
             if UnitInParty(sender) and not inviteData.hasJoined then
                 inviteData.hasJoined = true
+
+                FlashClientIcon() -- Flash the WoW icon in the taskbar
+
                 displayTicketWindow(sender, inviteData.destination)
 
                 if inviteData.destination then
