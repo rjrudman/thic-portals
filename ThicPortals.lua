@@ -588,6 +588,7 @@ local function createOptionsPanel()
         end
     end)
     checkboxGroup:AddChild(debugModeCheckbox)
+    checkboxGroup:AddChild(tinyVerticalGap)
 
     -- Add spacer between checkboxes
     local spacerBetween4 = AceGUI:Create("Label")
@@ -595,14 +596,18 @@ local function createOptionsPanel()
     checkboxGroup:AddChild(spacerBetween4)
     -- Hide Icon Checkbox
     hideIconCheckbox = AceGUI:Create("CheckBox")
-    hideIconCheckbox:SetLabel("Hide Open/Closed Icon")
+    hideIconCheckbox:SetLabel("Hide Icon")
     hideIconCheckbox:SetValue(debugMode)
     hideIconCheckbox:SetCallback("OnValueChanged", function(_, _, value)
         hideIcon = value
         if hideIcon then
             print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked visible.")
+
+            toggleButton:Hide()
         else
             print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked hidden.")
+
+            toggleButton:Show()
         end
     end)
     checkboxGroup:AddChild(hideIconCheckbox)
