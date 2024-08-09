@@ -473,8 +473,7 @@ end
 
 -- Function to check if a player can be invited
 local function canInvitePlayer(playerName)
-    -- return not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown
-    return true
+    return not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown
 end
 
 -- Function to create a pending invite entry
