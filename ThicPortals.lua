@@ -43,13 +43,15 @@ local optionsPanelHidden = true
 
 -- Config checkboxes
 local hideIcon = false
-local hideIconCheckbox = false
+local hideIconCheckbox = AceGUI:Create("CheckBox")
 local addonEnabled = false
-local addonEnabledCheckbox = false;
+local addonEnabledCheckbox = AceGUI:Create("CheckBox");
 local soundEnabled = true
-local soundEnabledCheckbox = true;
+local soundEnabledCheckbox = AceGUI:Create("CheckBox");
 local debugMode = false
-local debugModeCheckbox = false;
+local debugModeCheckbox = AceGUI:Create("CheckBox");
+local approachMode = false;
+local approachModeCheckbox = AceGUI:Create("CheckBox");
 
 -- Our global frame
 local frame = CreateFrame("Frame")
@@ -390,49 +392,79 @@ local function invitePlayer(sender)
     print("|cff87CEEB[Thic-Portals]|r Invited " .. sender .. " to the group.")
 end
 
--- Function to handle invites and messages
-local function handleInviteAndMessage(sender, playerName, message)
+-- Function to check if a player can be invited
+local function canInvitePlayer(playerName)
+    return not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown
+end
+
+-- Function to create a pending invite entry
+local function createPendingInvite(playerName, sender, destinationKeyword)
+    pendingInvites[playerName] = {
+        timestamp = time(),
+        destination = destinationKeyword,
+        hasJoined = false,
+        hasPaid = false,
+        travelled = false,
+        fullName = sender
+    }
+    setSenderExpiryTimer(playerName)
+end
+
+-- Function to handle common phrase invites
+local function handleCommonPhraseInvite(sender, playerName, message)
+    if canInvitePlayer(playerName) then
+        invitePlayer(sender)
+        local _, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
+        createPendingInvite(playerName, sender, destinationKeyword)
+    else
+        print("Player " .. sender .. " is still on cooldown.")
+    end
+end
+
+-- Function to handle destination-only invites
+local function handleDestinationOnlyInvite(sender, playerName, message)
+    local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
+    if destinationPosition and canInvitePlayer(playerName) then
+        invitePlayer(sender)
+        createPendingInvite(playerName, sender, destinationKeyword)
+    elseif destinationPosition then
+        print("Player " .. sender .. " is still on cooldown.")
+    end
+end
+
+-- Function to handle advanced keyword detection invites
+local function handleAdvancedKeywordInvite(sender, playerName, message)
+    local intentPosition, intentKeyword = findKeywordPosition(message, IntentKeywords)
+    if intentPosition then
+        local servicePosition, serviceKeyword = findKeywordPosition(message, ServiceKeywords)
+        local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
+
+        if servicePosition and servicePosition > intentPosition and canInvitePlayer(playerName) then
+            invitePlayer(sender)
+            createPendingInvite(playerName, sender, destinationKeyword)
+        elseif servicePosition and servicePosition > intentPosition then
+            print("Player " .. sender .. " is still on cooldown.")
+        end
+    end
+end
+
+-- Main function to handle invites and messages
+local function handleInviteAndMessage(sender, playerName, message, destinationOnly)
     if isPlayerBanned(sender) then
-        print("Player " .. sender .. " is on the ban list. No invite sent.");
+        print("Player " .. sender .. " is on the ban list. No invite sent.")
         return
     end
 
     if containsCommonPhrase(message) then
-        -- Handle common phrases
-        if not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown then
-            invitePlayer(sender);
-            -- Record the time and track the invite as pending
-            local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords);
-            pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, hasPaid = false, travelled = false, fullName = sender};
-            setSenderExpiryTimer(playerName);
-        else
-            print("Player " .. sender .. " is still on cooldown.");
-        end
+        handleCommonPhraseInvite(sender, playerName, message)
+    elseif destinationOnly then
+        handleDestinationOnlyInvite(sender, playerName, message)
     else
-        -- Handle advanced keyword detection
-        local intentPosition, intentKeyword = findKeywordPosition(message, IntentKeywords);
-        if intentPosition then
-
-            local servicePosition, serviceKeyword = findKeywordPosition(message, ServiceKeywords)
-            local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
-
-            -- Proceed only if intent is found first
-            if (servicePosition and servicePosition > intentPosition) then
-                -- Invite the player and create the portal as requested
-                if not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown then
-                    invitePlayer(sender);
-                    -- Record the time and track the invite as pending
-                    pendingInvites[playerName] = {timestamp = time(), destination = destinationKeyword, hasJoined = false, hasPaid = false, travelled = false, fullName = sender}
-                    setSenderExpiryTimer(playerName);
-                else
-                    print("Player " .. sender .. " is still on cooldown.");
-                end
-            end
-        end
+        handleAdvancedKeywordInvite(sender, playerName, message)
     end
 
     -- Update pending invite destination if a destination keyword is found in the new message
-    updatePendingInviteDestination(playerName, message);
+    updatePendingInviteDestination(playerName, message)
 end
 
 -- Function to set the min width allowed of a frame
@@ -482,6 +514,76 @@ end
 
 local function setOptionsPanelHiddenToFalse()
     optionsPanelHidden = true
+end
+
+local function addCheckbox(group, label, checkbox, initialValue, callback)
+    -- Add spacer between checkboxes
+    local spacer = AceGUI:Create("Label")
+    spacer:SetWidth(30)
+    group:AddChild(spacer)
+
+    -- Create checkbox
+    checkbox:SetLabel(label)
+    checkbox:SetValue(initialValue)
+    checkbox:SetCallback("OnValueChanged", callback)
+    group:AddChild(checkbox)
+
+    -- Add tiny vertical gap
+    local tinyVerticalGap = AceGUI:Create("Label")
+    tinyVerticalGap:SetText("")
+    tinyVerticalGap:SetFullWidth(true)
+    group:AddChild(tinyVerticalGap)
+end
+
+-- Helper function to create a label-value pair with a fixed label width and bold value
+local function addLabelValuePair(labelText, valueText)
+    local group = AceGUI:Create("SimpleGroup")
+    group:SetFullWidth(true)
+    group:SetLayout("Flow")
+
+    local spacer = AceGUI:Create("Label")
+    spacer:SetWidth(30)
+    group:AddChild(spacer)
+
+    local label = AceGUI:Create("Label")
+    label:SetText(labelText)
+    label:SetWidth(fixedLabelWidth)
+    group:AddChild(label)
+
+    local value = AceGUI:Create("Label")
+    value:SetText("|cFFFFD700" .. valueText .. "|r") -- Make the value bold
+    group:AddChild(value)
+
+    return group
+end
+
+-- Helper function to create a label and editbox pair
+local function addMessageMultiLineEditBox(labelText, messageVar, callback)
+    local group = AceGUI:Create("SimpleGroup")
+    group:SetFullWidth(true)
+    group:SetLayout("Flow")
+
+    local editBoxGroup = AceGUI:Create("SimpleGroup")
+    editBoxGroup:SetWidth(330)
+    editBoxGroup:SetLayout("Flow")
+
+    local spacer = AceGUI:Create("Label")
+    spacer:SetWidth(20)
+    editBoxGroup:AddChild(spacer)
+
+    local editBox = AceGUI:Create("MultiLineEditBox")
+    editBox:SetText(messageVar)
+    editBox:SetWidth(310)
+    editBox:SetNumLines(3)
+    editBox:SetLabel(labelText)
+    editBox:SetCallback("OnEnterPressed", function(_, _, text)
+        callback(text)
+    end)
+    editBoxGroup:AddChild(editBox)
+
+    group:AddChild(editBoxGroup)
+
+    return group
 end
 
 local optionsPanel
@@ -537,30 +639,14 @@ local function createOptionsPanel()
     checkboxGroup:SetFullWidth(true)
     checkboxGroup:SetLayout("Flow")
 
-    -- Add spacer before checkboxes
-    local spacer = AceGUI:Create("Label")
-    spacer:SetWidth(30)
-    checkboxGroup:AddChild(spacer)
     -- Addon On/Off Checkbox
-    addonEnabledCheckbox = AceGUI:Create("CheckBox")
-    addonEnabledCheckbox:SetLabel("Enable Addon")
-    addonEnabledCheckbox:SetValue(addonEnabled)
-    addonEnabledCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+    addCheckbox(checkboxGroup, "Enable Addon", addonEnabledCheckbox, addonEnabled, function(_, _, value)
         addonEnabled = value
         toggleAddonEnabled()
     end)
-    checkboxGroup:AddChild(addonEnabledCheckbox)
-    checkboxGroup:AddChild(tinyVerticalGap)
 
-    -- Add spacer between checkboxes
-    local spacerBetween2 = AceGUI:Create("Label")
-    spacerBetween2:SetWidth(30)
-    checkboxGroup:AddChild(spacerBetween2)
     -- Sound On/Off Checkbox
-    soundEnabledCheckbox = AceGUI:Create("CheckBox")
-    soundEnabledCheckbox:SetLabel("Enable Sound")
-    soundEnabledCheckbox:SetValue(soundEnabled)
-    soundEnabledCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+    addCheckbox(checkboxGroup, "Enable Sound", soundEnabledCheckbox, soundEnabled, function(_, _, value)
         soundEnabled = value
         if soundEnabled then
             print("|cff87CEEB[Thic-Portals]|r Sound enabled.")
@@ -568,18 +654,9 @@ local function createOptionsPanel()
             print("|cff87CEEB[Thic-Portals]|r Sound disabled.")
         end
     end)
-    checkboxGroup:AddChild(soundEnabledCheckbox)
-    checkboxGroup:AddChild(tinyVerticalGap)
 
-    -- Add spacer between checkboxes
-    local spacerBetween3 = AceGUI:Create("Label")
-    spacerBetween3:SetWidth(30)
-    checkboxGroup:AddChild(spacerBetween3)
     -- Debug Mode Checkbox
-    debugModeCheckbox = AceGUI:Create("CheckBox")
-    debugModeCheckbox:SetLabel("Enable Debug Mode")
-    debugModeCheckbox:SetValue(debugMode)
-    debugModeCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+    addCheckbox(checkboxGroup, "Enable Debug Mode", debugModeCheckbox, debugMode, function(_, _, value)
         debugMode = value
         if debugMode then
             print("|cff87CEEB[Thic-Portals]|r Test mode enabled.")
@@ -587,30 +664,28 @@ local function createOptionsPanel()
             print("|cff87CEEB[Thic-Portals]|r Test mode disabled.")
         end
     end)
-    checkboxGroup:AddChild(debugModeCheckbox)
-    checkboxGroup:AddChild(tinyVerticalGap)
 
-    -- Add spacer between checkboxes
-    local spacerBetween4 = AceGUI:Create("Label")
-    spacerBetween4:SetWidth(30)
-    checkboxGroup:AddChild(spacerBetween4)
     -- Hide Icon Checkbox
-    hideIconCheckbox = AceGUI:Create("CheckBox")
-    hideIconCheckbox:SetLabel("Hide Icon")
-    hideIconCheckbox:SetValue(debugMode)
-    hideIconCheckbox:SetCallback("OnValueChanged", function(_, _, value)
+    addCheckbox(checkboxGroup, "Hide Icon", hideIconCheckbox, hideIcon, function(_, _, value)
         hideIcon = value
         if hideIcon then
             print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked visible.")
-
             toggleButton:Hide()
         else
             print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked hidden.")
-
             toggleButton:Show()
         end
     end)
-    checkboxGroup:AddChild(hideIconCheckbox)
+
+    -- Approach Mode Checkbox
+    addCheckbox(checkboxGroup, "Approach Mode", approachModeCheckbox, approachMode, function(_, _, value)
+        approachMode = value
+        if approachMode then
+            print("|cff87CEEB[Thic-Portals]|r Approach mode enabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Approach mode disabled.")
+        end
+    end)
 
     scroll:AddChild(checkboxGroup)
 
@@ -625,38 +700,29 @@ local function createOptionsPanel()
     scroll:AddChild(goldStatsTitle)
     scroll:AddChild(largeVerticalGap)
 
-    -- Helper function to create a label-value pair with a fixed label width and bold value
-    local function createLabelValuePair(labelText, valueText)
-        local group = AceGUI:Create("SimpleGroup")
-        group:SetFullWidth(true)
-        group:SetLayout("Flow")
-
-        local spacer = AceGUI:Create("Label")
-        spacer:SetWidth(30)
-        group:AddChild(spacer)
-
-        local label = AceGUI:Create("Label")
-        label:SetText(labelText)
-        label:SetWidth(fixedLabelWidth)
-        group:AddChild(label)
-
-        local value = AceGUI:Create("Label")
-        value:SetText("|cFFFFD700" .. valueText .. "|r") -- Make the value bold
-        group:AddChild(value)
-
-        return group
-    end
-
     -- Add label-value pairs to the scroll frame
-    local totalGoldLabel = createLabelValuePair("Total Gold Earned:", string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.totalGold / 10000), math.floor((ThicPortalsSaved.totalGold % 10000) / 100), ThicPortalsSaved.totalGold % 100))
+    local totalGoldLabel = addLabelValuePair(
+        "Total Gold Earned:", string.format("%dg %ds %dc",
+        math.floor(ThicPortalsSaved.totalGold / 10000),
+        math.floor((ThicPortalsSaved.totalGold % 10000) / 100),
+        ThicPortalsSaved.totalGold % 100
+    ))
     scroll:AddChild(totalGoldLabel)
     scroll:AddChild(smallVerticalGap)
 
-    local dailyGoldLabel = createLabelValuePair("Gold Earned Today:", string.format("%dg %ds %dc", math.floor(ThicPortalsSaved.dailyGold / 10000), math.floor((ThicPortalsSaved.dailyGold % 10000) / 100), ThicPortalsSaved.dailyGold % 100))
+    local dailyGoldLabel = addLabelValuePair(
+        "Gold Earned Today:", string.format("%dg %ds %dc",
+        math.floor(ThicPortalsSaved.dailyGold / 10000),
+        math.floor((ThicPortalsSaved.dailyGold % 10000) / 100),
+        ThicPortalsSaved.dailyGold % 100
+    ))
     scroll:AddChild(dailyGoldLabel)
     scroll:AddChild(smallVerticalGap)
 
-    local totalTradesLabel = createLabelValuePair("Total Trades Completed:", ThicPortalsSaved.totalTradesCompleted)
+    local totalTradesLabel = addLabelValuePair(
+        "Total Trades Completed:",
+        ThicPortalsSaved.totalTradesCompleted
+    )
     scroll:AddChild(totalTradesLabel)
     scroll:AddChild(largeVerticalGap)
     scroll:AddChild(largeVerticalGap)
@@ -669,37 +735,8 @@ local function createOptionsPanel()
     scroll:AddChild(messageConfigTitle)
     scroll:AddChild(largeVerticalGap)
 
-    -- Helper function to create a label and editbox pair
-    local function createLabelEditBoxPair(labelText, messageVar, callback)
-        local group = AceGUI:Create("SimpleGroup")
-        group:SetFullWidth(true)
-        group:SetLayout("Flow")
-
-        local editBoxGroup = AceGUI:Create("SimpleGroup")
-        editBoxGroup:SetWidth(330)
-        editBoxGroup:SetLayout("Flow")
-
-        local spacer = AceGUI:Create("Label")
-        spacer:SetWidth(20)
-        editBoxGroup:AddChild(spacer)
-
-        local editBox = AceGUI:Create("MultiLineEditBox")
-        editBox:SetText(messageVar)
-        editBox:SetWidth(310)
-        editBox:SetNumLines(3)
-        editBox:SetLabel(labelText)
-        editBox:SetCallback("OnEnterPressed", function(_, _, text)
-            callback(text)
-        end)
-        editBoxGroup:AddChild(editBox)
-
-        group:AddChild(editBoxGroup)
-
-        return group
-    end
-
     -- Invite Message
-    local inviteMessageGroup = createLabelEditBoxPair("Invite Message:", InviteMessage, function(text)
+    local inviteMessageGroup = addMessageMultiLineEditBox("Invite Message:", InviteMessage, function(text)
         InviteMessage = text
         print("|cff87CEEB[Thic-Portals]|r Invite message updated.")
     end)
@@ -707,7 +744,7 @@ local function createOptionsPanel()
     scroll:AddChild(smallVerticalGap)
 
     -- Invite Message Without Destination
-    local inviteMessageWithoutDestinationGroup = createLabelEditBoxPair("Invite Message (No Destination):", InviteMessageWithoutDestination, function(text)
+    local inviteMessageWithoutDestinationGroup = addMessageMultiLineEditBox("Invite Message (No Destination):", InviteMessageWithoutDestination, function(text)
         InviteMessageWithoutDestination = text
         print("|cff87CEEB[Thic-Portals]|r Invite message without destination updated.")
     end)
@@ -715,7 +752,7 @@ local function createOptionsPanel()
     scroll:AddChild(smallVerticalGap)
 
     -- Tip Message
-    local tipMessageGroup = createLabelEditBoxPair("Tip Message:", TipMessage, function(text)
+    local tipMessageGroup = addMessageMultiLineEditBox("Tip Message:", TipMessage, function(text)
         TipMessage = text
         print("|cff87CEEB[Thic-Portals]|r Tip message updated.")
     end)
@@ -723,7 +760,7 @@ local function createOptionsPanel()
     scroll:AddChild(smallVerticalGap)
 
     -- No Tip Message
-    local noTipMessageGroup = createLabelEditBoxPair("No Tip Message:", NoTipMessage, function(text)
+    local noTipMessageGroup = addMessageMultiLineEditBox("No Tip Message:", NoTipMessage, function(text)
         NoTipMessage = text
         print("|cff87CEEB[Thic-Portals]|r No tip message updated.")
     end)
@@ -923,13 +960,19 @@ end
 
 -- Event handler function
 frame:SetScript("OnEvent", function(self, event, ...)
-    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_CHANNEL" then
+    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_CHANNEL" then
+        local destinationOnly = false
         local message, sender = ...
         local playerName = extractPlayerName(sender)
 
+        -- If we are running approach mode, when we are handling say/whisper messages, we should evaluate destination only for a match
+        if approachMode and (event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_SAY") then
+            destinationOnly = true
+        end
+
         -- Check if addon is enabled
         if addonEnabled and message and playerName then
-            handleInviteAndMessage(sender, playerName, message)
+            handleInviteAndMessage(sender, playerName, message, destinationOnly)
         end
     elseif event == "VARIABLES_LOADED" then
         -- Initialize saved variables
