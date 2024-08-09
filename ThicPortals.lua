@@ -675,11 +675,6 @@ local function createOptionsPanel()
         group:SetFullWidth(true)
         group:SetLayout("Flow")
 
-        local label = AceGUI:Create("Label")
-        label:SetText(labelText)
-        label:SetWidth(300)
-        group:AddChild(label)
-
         local editBoxGroup = AceGUI:Create("SimpleGroup")
         editBoxGroup:SetWidth(330)
         editBoxGroup:SetLayout("Flow")
@@ -688,9 +683,11 @@ local function createOptionsPanel()
         spacer:SetWidth(20)
         editBoxGroup:AddChild(spacer)
 
-        local editBox = AceGUI:Create("EditBox")
+        local editBox = AceGUI:Create("MultiLineEditBox")
         editBox:SetText(messageVar)
         editBox:SetWidth(310)
+        editBox:SetNumLines(3)
+        editBox:SetLabel(labelText)
         editBox:SetCallback("OnEnterPressed", function(_, _, text)
             callback(text)
         end)
@@ -747,7 +744,7 @@ local function createOptionsPanel()
         keywordGroup:SetLayout("Flow")
         scroll:AddChild(keywordGroup)
 
-        -- Add/Remove Keyword EditBox
+        -- Add/Remove Keyword MultiLineEditBox
         local editBox = AceGUI:Create("EditBox")
         editBox:SetLabel("Add/Remove Keyword")
         editBox:SetWidth(200)
