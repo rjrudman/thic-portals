@@ -595,6 +595,12 @@ local function createOptionsPanel()
     -- Create a container frame
     local frame = AceGUI:Create("Frame")
 
+    -- Add the frame as a global variable under the name `MyGlobalFrameName`
+    _G["ThicPortalsOptionsPanel"] = frame.frame
+    -- Register the global variable `MyGlobalFrameName` as a "special frame"
+    -- so that it is closed when the escape key is pressed.
+    tinsert(UISpecialFrames, "ThicPortalsOptionsPanel")
+
     frame:SetTitle("Thic-Portals Service Configuration")
     frame:SetCallback("OnClose", function(widget) setOptionsPanelHiddenToFalse() end)
     frame:SetLayout("Fill")
