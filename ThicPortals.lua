@@ -644,16 +644,12 @@ local function addMessageMultiLineEditBox(labelText, messageVar, callback)
     group:SetLayout("Flow")
 
     local editBoxGroup = AceGUI:Create("SimpleGroup")
-    editBoxGroup:SetWidth(330)
+    editBoxGroup:SetFullWidth(true)
     editBoxGroup:SetLayout("Flow")
-
-    local spacer = AceGUI:Create("Label")
-    spacer:SetWidth(20)
-    editBoxGroup:AddChild(spacer)
 
     local editBox = AceGUI:Create("MultiLineEditBox")
     editBox:SetText(messageVar)
-    editBox:SetWidth(310)
+    editBox:SetFullWidth(true)
     editBox:SetNumLines(3)
     editBox:SetLabel(labelText)
     editBox:SetCallback("OnEnterPressed", function(_, _, text)
@@ -821,37 +817,43 @@ local function createOptionsPanel()
     scroll:AddChild(messageConfigTitle)
     scroll:AddChild(largeVerticalGap)
 
+    -- Create a parent group for the message configuration
+    local messageConfigGroup = AceGUI:Create("SimpleGroup")
+    messageConfigGroup:SetFullWidth(true)
+    messageConfigGroup:SetLayout("Flow")
+    scroll:AddChild(messageConfigGroup)
+
     -- Invite Message
     local inviteMessageGroup = addMessageMultiLineEditBox("Invite Message:", InviteMessage, function(text)
         InviteMessage = text
         print("|cff87CEEB[Thic-Portals]|r Invite message updated.")
     end)
-    scroll:AddChild(inviteMessageGroup)
-    scroll:AddChild(smallVerticalGap)
+    messageConfigGroup:AddChild(inviteMessageGroup)
+    messageConfigGroup:AddChild(smallVerticalGap)
 
     -- Invite Message Without Destination
     local inviteMessageWithoutDestinationGroup = addMessageMultiLineEditBox("Invite Message (No Destination):", InviteMessageWithoutDestination, function(text)
         InviteMessageWithoutDestination = text
         print("|cff87CEEB[Thic-Portals]|r Invite message without destination updated.")
     end)
-    scroll:AddChild(inviteMessageWithoutDestinationGroup)
-    scroll:AddChild(smallVerticalGap)
+    messageConfigGroup:AddChild(inviteMessageWithoutDestinationGroup)
+    messageConfigGroup:AddChild(smallVerticalGap)
 
     -- Tip Message
     local tipMessageGroup = addMessageMultiLineEditBox("Tip Message:", TipMessage, function(text)
         TipMessage = text
         print("|cff87CEEB[Thic-Portals]|r Tip message updated.")
     end)
-    scroll:AddChild(tipMessageGroup)
-    scroll:AddChild(smallVerticalGap)
+    messageConfigGroup:AddChild(tipMessageGroup)
+    messageConfigGroup:AddChild(smallVerticalGap)
 
     -- No Tip Message
     local noTipMessageGroup = addMessageMultiLineEditBox("No Tip Message:", NoTipMessage, function(text)
         NoTipMessage = text
         print("|cff87CEEB[Thic-Portals]|r No tip message updated.")
     end)
-    scroll:AddChild(noTipMessageGroup)
-    scroll:AddChild(largeVerticalGap)
+    messageConfigGroup:AddChild(noTipMessageGroup)
+    messageConfigGroup:AddChild(largeVerticalGap)
 
     -- Function to create keyword management section
     local function createKeywordSection(titleText, keywords, addFunc, removeFunc)
