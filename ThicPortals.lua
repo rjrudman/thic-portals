@@ -202,11 +202,20 @@ local function updatePendingInviteDestination(playerName, message)
     end
 end
 
+-- Function to calculate the required height for text
+local function calculateTextHeight(fontString, text, width)
+    fontString:SetWidth(width)
+    fontString:SetText(text)
+    fontString:SetWordWrap(true)
+    local height = fontString:GetStringHeight()
+    return height
+end
+
 -- Updated function to create and display the ticket window
 local function displayTicketWindow(sender, destination)
     -- Create the main frame
     local ticketFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    ticketFrame:SetSize(220, 160)  -- Reduced height
+    ticketFrame:SetSize(220, 160)  -- Initial size
     ticketFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", UIParent:GetWidth() * 0.75, UIParent:GetHeight() * 0.75)
     ticketFrame:SetBackdrop({
         bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
@@ -225,12 +234,12 @@ local function displayTicketWindow(sender, destination)
 
     -- Create the title text
     local title = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", 0, -20)  -- Added padding from the top
+    title:SetPoint("TOP", 0, -20)
     title:SetText("NEW TICKET")
 
     -- Create the sender label
     local senderLabel = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    senderLabel:SetPoint("TOPLEFT", 20, -50)  -- Adjusted position
+    senderLabel:SetPoint("TOPLEFT", 20, -50)
     senderLabel:SetText("Player:")
 
     -- Create the sender value
@@ -274,7 +283,7 @@ local function displayTicketWindow(sender, destination)
     removeButton:SetSize(80, 22)
     removeButton:SetPoint("BOTTOM", 0, 15)
     removeButton:SetText("Remove")
-    removeButton:SetEnabled(false)  -- Initially disable the button
+    removeButton:SetEnabled(false)
     removeButton:SetScript("OnClick", function()
         UninviteUnit(sender)
 
@@ -287,24 +296,94 @@ local function displayTicketWindow(sender, destination)
         ticketFrame:Hide()
     end)
 
+    local viewingMessage = false
+    local originalMessageLabel = nil
+    local originalMessageValue = nil
+
+    -- Add an icon to the top left that allows us to switch to a "display original message mode"
+    local iconButton = CreateFrame("Button", nil, ticketFrame)
+    iconButton:SetSize(20, 20)
+    iconButton:SetPoint("TOPLEFT", 12, -12)
+    iconButton:SetNormalTexture("Interface\\Icons\\INV_Letter_15")
+    iconButton:SetScript("OnClick", function()
+        if not viewingMessage then
+            viewingMessage = true
+
+            -- Change the icon to a back icon that will return us to the original view on click
+            iconButton:SetNormalTexture("Interface\\Icons\\achievement_bg_returnxflags_def_wsg")
+
+            -- Hide the destination label and value
+            destinationLabel:Hide()
+            destinationValue:Hide()
+
+            -- Hide the distance label
+            distanceLabel:Hide()
+
+            -- Hide the remove button
+            removeButton:Hide()
+
+            -- Create a label for the original message
+            originalMessageLabel = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            originalMessageLabel:SetPoint("TOPLEFT", senderLabel, "BOTTOMLEFT", 0, -10)
+            originalMessageLabel:SetText("Original Message:")
+
+            -- Create a font string to calculate the height required
+            originalMessageValue = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            local requiredHeight = calculateTextHeight(originalMessageValue, pendingInvites[sender].originalMessage, 180)
+
+            -- Adjust the frame height based on the required height
+            local newHeight = 160 - 40 + requiredHeight  -- Base height + required height
+            ticketFrame:SetHeight(newHeight)
+
+            -- Display the original message
+            originalMessageValue:SetPoint("TOPLEFT", originalMessageLabel, "BOTTOMLEFT", 0, -10)
+            originalMessageValue:SetWidth(180)
+            originalMessageValue:SetJustifyH("LEFT")
+            originalMessageValue:SetText(pendingInvites[sender].originalMessage)
+            originalMessageValue:SetWordWrap(true)
+        else
+            viewingMessage = false
+
+            -- Change the icon back to the original icon
+            iconButton:SetNormalTexture("Interface\\Icons\\INV_Letter_15")
+
+            -- Reset the frame size to its original dimensions
+            ticketFrame:SetHeight(160)
+
+            -- Show the destination label and value
+            destinationLabel:Show()
+            destinationValue:Show()
+
+            -- Show the distance label
+            distanceLabel:Show()
+
+            -- Show the remove button
+            removeButton:Show()
+
+            -- Hide the original message label and value
+            originalMessageLabel:Hide()
+            originalMessageValue:Hide()
+        end
+    end)
+
     local ticker
     -- Enable the remove button when the player has travelled
     ticker = C_Timer.NewTicker(1, function()
         if pendingInvites[sender] and pendingInvites[sender].travelled then
             removeButton:SetEnabled(true)
-            ticker:Cancel() -- Cancel the ticker when the player has moved away
+            ticker:Cancel()
 
             -- Update to show "Complete" and tick icon
             destinationLabel:Hide()
             destinationValue:Hide()
-            distanceLabel:Hide()  -- Hide the distance label
+            distanceLabel:Hide()
 
             local completeText = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             completeText:SetPoint("CENTER", -10, -10)
             completeText:SetText("Complete")
 
             local tickIcon = ticketFrame:CreateTexture(nil, "ARTWORK")
-            tickIcon:SetTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready") -- Custom tick icon
+            tickIcon:SetTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready")
             tickIcon:SetPoint("LEFT", completeText, "RIGHT", 5, 0)
             tickIcon:SetSize(20, 20)
         end
@@ -394,14 +473,16 @@ end
 
 -- Function to check if a player can be invited
 local function canInvitePlayer(playerName)
-    return not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown
+    -- return not pendingInvites[playerName] or time() - pendingInvites[playerName].timestamp >= inviteCooldown
+    return true
 end
 
 -- Function to create a pending invite entry
-local function createPendingInvite(playerName, sender, destinationKeyword)
+local function createPendingInvite(playerName, sender, message, destinationKeyword)
     pendingInvites[playerName] = {
         timestamp = time(),
         destination = destinationKeyword,
+        originalMessage = message,
         hasJoined = false,
         hasPaid = false,
         travelled = false,
@@ -415,7 +496,7 @@ local function handleCommonPhraseInvite(sender, playerName, message)
     if canInvitePlayer(playerName) then
         invitePlayer(sender)
         local _, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
-        createPendingInvite(playerName, sender, destinationKeyword)
+        createPendingInvite(playerName, sender, messsage, destinationKeyword)
     else
         print("Player " .. sender .. " is still on cooldown.")
     end
@@ -426,7 +507,7 @@ local function handleDestinationOnlyInvite(sender, playerName, message)
     local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
     if destinationPosition and canInvitePlayer(playerName) then
         invitePlayer(sender)
-        createPendingInvite(playerName, sender, destinationKeyword)
+        createPendingInvite(playerName, sender, message, destinationKeyword)
     elseif destinationPosition then
         print("Player " .. sender .. " is still on cooldown.")
     end
@@ -441,7 +522,7 @@ local function handleAdvancedKeywordInvite(sender, playerName, message)
 
         if servicePosition and servicePosition > intentPosition and canInvitePlayer(playerName) then
             invitePlayer(sender)
-            createPendingInvite(playerName, sender, destinationKeyword)
+            createPendingInvite(playerName, sender, message, destinationKeyword)
         elseif servicePosition and servicePosition > intentPosition then
             print("Player " .. sender .. " is still on cooldown.")
         end
