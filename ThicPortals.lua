@@ -366,26 +366,80 @@ local function displayTicketWindow(sender, destination)
         end
     end)
 
-    local ticker
-    -- Enable the remove button when the player has travelled
+    -- Variables for managing "Complete TICK" elements
+    local ticker, completeText, tickIcon
+
+    -- Function to show "Complete TICK" and hide unnecessary elements
+    local function showCompleteTick()
+        destinationLabel:Hide()
+        destinationValue:Hide()
+        distanceLabel:Hide()
+
+        completeText = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        completeText:SetPoint("CENTER", -10, -10)
+        completeText:SetText("Complete")
+
+        tickIcon = ticketFrame:CreateTexture(nil, "ARTWORK")
+        tickIcon:SetTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready")
+        tickIcon:SetPoint("LEFT", completeText, "RIGHT", 5, 0)
+        tickIcon:SetSize(20, 20)
+    end
+
+    -- Function to hide "Complete TICK"
+    local function hideCompleteTick()
+        if completeText then completeText:Hide() end
+        if tickIcon then tickIcon:Hide() end
+    end
+
+    -- Handling icon button click to toggle between message panel and original panel
+    iconButton:SetScript("OnClick", function()
+        if not viewingMessage then
+            viewingMessage = true
+            iconButton:SetNormalTexture("Interface\\Icons\\achievement_bg_returnxflags_def_wsg")
+            destinationLabel:Hide()
+            destinationValue:Hide()
+            distanceLabel:Hide()
+            removeButton:Hide()
+
+            -- Hide the "Complete TICK" if it's visible
+            hideCompleteTick()
+
+            originalMessageLabel = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            originalMessageLabel:SetPoint("TOPLEFT", senderLabel, "BOTTOMLEFT", 0, -10)
+            originalMessageLabel:SetText("Original Message:")
+
+            originalMessageValue = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            local requiredHeight = calculateTextHeight(originalMessageValue, pendingInvites[sender].originalMessage, 180)
+            ticketFrame:SetHeight(160 - 40 + requiredHeight)
+            originalMessageValue:SetPoint("TOPLEFT", originalMessageLabel, "BOTTOMLEFT", 0, -10)
+            originalMessageValue:SetWidth(180)
+            originalMessageValue:SetJustifyH("LEFT")
+            originalMessageValue:SetText(pendingInvites[sender].originalMessage)
+            originalMessageValue:SetWordWrap(true)
+        else
+            viewingMessage = false
+            iconButton:SetNormalTexture("Interface\\Icons\\INV_Letter_15")
+            ticketFrame:SetHeight(160)
+            destinationLabel:Show()
+            destinationValue:Show()
+            distanceLabel:Show()
+            removeButton:Show()
+            if pendingInvites[sender].travelled then
+                showCompleteTick()  -- Show the "Complete TICK" if applicable
+            end
+            originalMessageLabel:Hide()
+            originalMessageValue:Hide()
+        end
+    end)
+
+    -- Enable the remove button when the player has traveled
     ticker = C_Timer.NewTicker(1, function()
         if pendingInvites[sender] and pendingInvites[sender].travelled then
             removeButton:SetEnabled(true)
             ticker:Cancel()
 
-            -- Update to show "Complete" and tick icon
-            destinationLabel:Hide()
-            destinationValue:Hide()
-            distanceLabel:Hide()
-
-            local completeText = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            completeText:SetPoint("CENTER", -10, -10)
-            completeText:SetText("Complete")
-
-            local tickIcon = ticketFrame:CreateTexture(nil, "ARTWORK")
-            tickIcon:SetTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready")
-            tickIcon:SetPoint("LEFT", completeText, "RIGHT", 5, 0)
-            tickIcon:SetSize(20, 20)
+            -- Update to show "Complete TICK"
+            showCompleteTick()
         end
     end, 180)
 
