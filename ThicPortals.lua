@@ -495,7 +495,7 @@ local function handleCommonPhraseInvite(sender, playerName, message)
     if canInvitePlayer(playerName) then
         invitePlayer(sender)
         local _, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
-        createPendingInvite(playerName, sender, messsage, destinationKeyword)
+        createPendingInvite(playerName, sender, message, destinationKeyword)
     else
         print("Player " .. sender .. " is still on cooldown.")
     end
