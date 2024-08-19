@@ -6,6 +6,8 @@ InviteMessageWithoutDestination = "[Thic-Portals] Good day! Please specify a des
 TipMessage = "[Thic-Portals] Thank you for your tip, enjoy your journey - safe travels!"
 NoTipMessage = "[Thic-Portals] Enjoy your journey and thanks for choosing Thic-Portals. Safe travels!"
 ThicPortalsSaved = false
+HideIcon = false
+ApproachMode = false;
 BanList = false
 IntentKeywords = false
 DestinationKeywords = false
@@ -42,16 +44,14 @@ local currentTraderMoney = nil
 local optionsPanelHidden = true
 
 -- Config checkboxes
-local hideIcon = false
 local hideIconCheckbox = AceGUI:Create("CheckBox")
+local approachModeCheckbox = AceGUI:Create("CheckBox");
 local addonEnabled = false
 local addonEnabledCheckbox = AceGUI:Create("CheckBox");
 local soundEnabled = true
 local soundEnabledCheckbox = AceGUI:Create("CheckBox");
 local debugMode = false
 local debugModeCheckbox = AceGUI:Create("CheckBox");
-local approachMode = false;
-local approachModeCheckbox = AceGUI:Create("CheckBox");
 
 -- Our global frame
 local frame = CreateFrame("Frame")
@@ -748,9 +748,9 @@ local function createOptionsPanel()
     end)
 
     -- Hide Icon Checkbox
-    addCheckbox(checkboxGroup, "Hide Icon", hideIconCheckbox, hideIcon, function(_, _, value)
-        hideIcon = value
-        if hideIcon then
+    addCheckbox(checkboxGroup, "Hide Icon", hideIconCheckbox, HideIcon, function(_, _, value)
+        HideIcon = value
+        if HideIcon then
             print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked visible.")
             toggleButton:Hide()
         else
@@ -760,9 +760,9 @@ local function createOptionsPanel()
     end)
 
     -- Approach Mode Checkbox
-    addCheckbox(checkboxGroup, "Approach Mode", approachModeCheckbox, approachMode, function(_, _, value)
-        approachMode = value
-        if approachMode then
+    addCheckbox(checkboxGroup, "Approach Mode", approachModeCheckbox, ApproachMode, function(_, _, value)
+        ApproachMode = value
+        if ApproachMode then
             print("|cff87CEEB[Thic-Portals]|r Approach mode enabled.")
         else
             print("|cff87CEEB[Thic-Portals]|r Approach mode disabled.")
@@ -1054,7 +1054,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         local playerName = extractPlayerName(sender)
 
         -- If we are running approach mode, when we are handling say/whisper messages, we should evaluate destination only for a match
-        if approachMode and (event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_SAY") then
+        if ApproachMode and (event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_SAY") then
             destinationOnly = true
         end
 
@@ -1074,6 +1074,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
 
         -- Update the button text initially
         toggleAddonEnabled()
+
+        -- If HideIcon is true, toggleButton should be set to hidden
+        if HideIcon then
+            toggleButton:Hide()
+        end
     elseif event == "GROUP_ROSTER_UPDATE" then
         for sender, inviteData in pairs(pendingInvites) do
             if UnitInParty(sender) and not inviteData.hasJoined then
@@ -1168,6 +1173,7 @@ end)
 SLASH_TP1 = "/Tp"
 SlashCmdList["TP"] = function(msg)
     local command, rest = msg:match("^(%S*)%s*(.-)$")
+
     if command == "on" then
         addonEnabled = true
         print("|cff87CEEB[Thic-Portals]|r Addon enabled.")
@@ -1176,6 +1182,11 @@ SlashCmdList["TP"] = function(msg)
         addonEnabled = false
         print("|cff87CEEB[Thic-Portals]|r Addon disabled.")
         addonEnabledCheckbox:SetValue(false)
+    elseif command == "show" then
+        toggleButton:Show()
+        HideIcon = false
+        hideIconCheckbox:SetValue(HideIcon)
+        print("|cff87CEEB[Thic-Portals]|r Addon management icon displayed.")
     elseif command == "msg" then
         InviteMessage = rest
         print("|cff87CEEB[Thic-Portals]|r Invite message set to: " .. InviteMessage)
@@ -1230,6 +1241,7 @@ SlashCmdList["TP"] = function(msg)
         end
     elseif command == "help" then
         print("|cff87CEEB[Thic-Portals]|r Usage:")
+        print("/Tp show - Show the addon button")
         print("/Tp on - Enable the addon")
         print("/Tp off - Disable the addon")
         print("/Tp msg [message] - Set the invite message")
