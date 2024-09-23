@@ -140,23 +140,32 @@ local function checkTradeTip()
     print(string.format("|cff87CEEB[Thic-Portals]|r Received %dg %ds %dc from the trade.", gold, silver, remainingCopper));
 
     if gold > 0 or silver > 0 or remainingCopper > 0 then
+        incrementTradesCompleted();
         resetDailyGoldIfNeeded();
         addTipToRollingTotal(gold, silver, remainingCopper);
-        incrementTradesCompleted();
 
         -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
         if gold > 8 then
             SendChatMessage("<3", "WHISPER", nil, pendingInvites[currentTraderName].fullName)
+
+            -- Send an emote "thank" to the player after they have accepted the trade
+            DoEmote("thank", currentTraderName)
         end
 
         -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
         if gold == 69 or silver == 69 or remainingCopper == 69 then
             SendChatMessage("Nice (⌐□_□)", "WHISPER", nil, pendingInvites[currentTraderName].fullName)
+
+            -- Send an emote "flirt" to the player after they sent a 69 tip
+            DoEmote("flirt", currentTraderName)
         end
 
         -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
         if gold == 4 and silver == 20 then
             SendChatMessage("420 blaze it (⌐□_□)-~", "WHISPER", nil, pendingInvites[currentTraderName].fullName)
+
+            -- Send an emote "silly" to the player after they sent a 420 tip
+            DoEmote("silly", currentTraderName)
         end
 
         return true
@@ -170,6 +179,11 @@ local function containsCommonPhrase(message)
     message = message:lower();
     for _, phrase in ipairs(commonPhrases) do
         if string.find(message, phrase) then
+            -- Log what we matched on if we're in debug mode
+            if debugMode then
+                print("|cff87CEEB[Thic-Portals]|r Matched on common phrase: " .. phrase);
+            end
+
             return true;
         end
     end
@@ -559,6 +573,11 @@ end
 local function handleDestinationOnlyInvite(sender, playerName, message)
     local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
     if destinationPosition and canInvitePlayer(playerName) then
+        -- Log this outcome if in debug mode
+        if debugMode then
+            print("|cff87CEEB[Thic-Portals]|r [Destination-only-invite] Matched on destination keyword: " .. destinationKeyword);
+        end
+
         invitePlayer(sender)
         createPendingInvite(playerName, sender, message, destinationKeyword)
     elseif destinationPosition then
@@ -574,6 +593,13 @@ local function handleAdvancedKeywordInvite(sender, playerName, message)
         local destinationPosition, destinationKeyword = findKeywordPosition(message, DestinationKeywords)
 
         if servicePosition and servicePosition > intentPosition and canInvitePlayer(playerName) then
+            -- Log this outcome if in debug mode
+            if debugMode then
+                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on intent keyword: " .. intentKeyword);
+                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on service keyword: " .. serviceKeyword);
+                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on destination keyword: " .. destinationKeyword);
+            end
+
             invitePlayer(sender)
             createPendingInvite(playerName, sender, message, destinationKeyword)
         elseif servicePosition and servicePosition > intentPosition then
