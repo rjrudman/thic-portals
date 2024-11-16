@@ -139,6 +139,9 @@ function Config.initializeSavedVariables()
         Config.Settings.toggleButtonPosition = ThicPortalSettings.ToggleButtonPosition
     end
 
+    -- Override addonEnabled to false on startup
+    Config.Settings.addonEnabled = false
+
     -- Remove old global variables if needed (Version 1.2.2)
     --
     -- ThicPortalsSaved = nil
