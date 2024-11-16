@@ -187,11 +187,6 @@ function Config.initializeSavedVariables()
     NoTipMessage = nil
     hideIcon = nil
     ApproachMode = nil
-
-    -- Print all config settings
-    for key, value in pairs(Config.Settings) do
-        print(key, value)
-    end
 end
 
 _G.Config = Config

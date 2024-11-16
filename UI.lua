@@ -375,7 +375,9 @@ function UI.showTicketWindow(sender, destination)
     iconButton:SetSize(20, 20)
     iconButton:SetPoint("TOPLEFT", 12, -12)
     iconButton:SetNormalTexture("Interface\\Icons\\INV_Letter_15")
-    iconButton:SetScript("OnClick", function()
+    iconButton:SetScript("OnClick", toggleMessageView)
+
+    function toggleMessageView()
         if not viewingMessage then
             viewingMessage = true
 
@@ -433,11 +435,16 @@ function UI.showTicketWindow(sender, destination)
             originalMessageLabel:Hide()
             originalMessageValue:Hide()
         end
-    end)
+    end
 
     -- Enable the remove button when the player has traveled
     ticker = C_Timer.NewTicker(1, function()
         if Events.pendingInvites[sender] and Events.pendingInvites[sender].travelled then
+            -- If we're currently viewing the message screen, switch back to the original view
+            if viewingMessage then
+                toggleMessageView()
+            end
+
             -- Update to show "Complete TICK"
             showCompleteTick()
             -- Enable the remove button
@@ -584,31 +591,42 @@ function UI.createOptionsPanel()
     scroll:AddChild(largeVerticalGap)
 
     -- Add label-value pairs to the scroll frame
-    local totalGoldLabel = addLabelValuePair(
-        "Total Gold Earned:", string.format("%dg %ds %dc",
-        math.floor(Config.Settings.totalGold / 10000),
-        math.floor((Config.Settings.totalGold % 10000) / 100),
-        Config.Settings.totalGold % 100
-    ))
+    local totalGoldLabel = addLabelValuePair("Total Gold Earned:", string.format("%dg %ds %dc", 0, 0, 0))
     scroll:AddChild(totalGoldLabel)
     scroll:AddChild(smallVerticalGap)
 
-    local dailyGoldLabel = addLabelValuePair(
-        "Gold Earned Today:", string.format("%dg %ds %dc",
-        math.floor(Config.Settings.dailyGold / 10000),
-        math.floor((Config.Settings.dailyGold % 10000) / 100),
-        Config.Settings.dailyGold % 100
-    ))
+    local dailyGoldLabel = addLabelValuePair("Gold Earned Today:", string.format("%dg %ds %dc", 0, 0, 0))
     scroll:AddChild(dailyGoldLabel)
     scroll:AddChild(smallVerticalGap)
 
-    local totalTradesLabel = addLabelValuePair(
-        "Total Trades Completed:",
-        Config.Settings.totalTradesCompleted
-    )
+    local totalTradesLabel = addLabelValuePair("Total Trades Completed:", Config.Settings.totalTradesCompleted)
     scroll:AddChild(totalTradesLabel)
     scroll:AddChild(largeVerticalGap)
     scroll:AddChild(largeVerticalGap)
+
+    -- Function to draw gold statistics to the ticket frame
+    function UI.drawGoldStatisticsToTicketFrame()
+        -- Update the total gold label
+        totalGoldLabel.children[3]:SetText(string.format(
+            "%dg %ds %dc",
+            math.floor(Config.Settings.totalGold / 10000),
+            math.floor((Config.Settings.totalGold % 10000) / 100),
+            Config.Settings.totalGold % 100
+        ))
+
+        -- Update the daily gold label
+        dailyGoldLabel.children[3]:SetText(string.format(
+            "%dg %ds %dc",
+            math.floor(Config.Settings.dailyGold / 10000),
+            math.floor((Config.Settings.dailyGold % 10000) / 100),
+            Config.Settings.dailyGold % 100
+        ))
+
+        -- Update the total trades label
+        totalTradesLabel.children[3]:SetText(
+            Config.Settings.totalTradesCompleted
+        )
+    end
 
     -- Message Configuration Title
     local messageConfigTitle = AceGUI:Create("Label")
@@ -779,6 +797,10 @@ end
 
 -- Show the options panel
 function UI.showOptionsPanel()
+    if Config.Settings.optionsPanelHidden then
+        print("Showing options panel.")
+    end
+
     -- If debug mode is enabled, print a message
     if Config.Settings.debugMode then
         print("|cff87CEEB[Thic-Portals]|r Showing options panel.")
@@ -786,6 +808,8 @@ function UI.showOptionsPanel()
 
     if not optionsPanel then
         UI.createOptionsPanel()
+    else
+        UI.drawGoldStatisticsToTicketFrame()
     end
 
     optionsPanel:Show()
@@ -795,6 +819,10 @@ end
 
 -- Hide the options panel
 function UI.hideOptionsPanel()
+    if Config.Settings.optionsPanelHidden then
+        print("Hiding options panel.")
+    end
+
     -- If debug mode is enabled, print a message
     if Config.Settings.debugMode then
         print("|cff87CEEB[Thic-Portals]|r Hiding options panel.")
