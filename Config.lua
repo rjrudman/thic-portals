@@ -182,17 +182,17 @@ function Config.initializeSavedVariables()
     Config.Settings.consecutiveLeavesWithoutPayment = 0
 
     -- Remove old global variables if needed (Version 1.2.2)
-    -- ThicPortalsSaved = nil
-    -- BanList = nil
-    -- IntentKeywords = nil
-    -- DestinationKeywords = nil
-    -- ServiceKeywords = nil
-    -- InviteMessage = nil
-    -- InviteMessageWithoutDestination = nil
-    -- TipMessage = nil
-    -- NoTipMessage = nil
-    -- hideIcon = nil
-    -- ApproachMode = nil
+    ThicPortalsSaved = nil
+    BanList = nil
+    IntentKeywords = nil
+    DestinationKeywords = nil
+    ServiceKeywords = nil
+    InviteMessage = nil
+    InviteMessageWithoutDestination = nil
+    TipMessage = nil
+    NoTipMessage = nil
+    hideIcon = nil
+    ApproachMode = nil
 
     -- Print all config settings
     for key, value in pairs(Config.Settings) do
