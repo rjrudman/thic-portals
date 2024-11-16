@@ -9,8 +9,8 @@ if not AceGUI then
     return
 end
 
+-- An object storing many of the addon's gold and trade settings (Version 1.2.2)
 ThicPortalsSaved = false
-
 -- Initialize saved variables (Version 1.2.2)
 InviteMessage = false
 InviteMessageWithoutDestination = false
@@ -19,24 +19,19 @@ NoTipMessage = false
 -- List variables (Version 1.2.2)
 BanList = false
 ApproachMode = false
+HideIcon = false
 IntentKeywords = false
 DestinationKeywords = false
 ServiceKeywords = false
--- General settings (Version 1.2.2)
+-- Temporary settings, not persisted via variables (Version 1.2.2)
 addonEnabled = false
 soundEnabled = true
 debugMode = false
-hideIcon = false
--- Variables for gold tracking (Version 1.2.2)
-totalGold = 0
-dailyGold = 0
-totalTradesCompleted = 0
-lastUpdateDate = date("%Y-%m-%d")
 
+-- New Variables >1.2.2
 Config.currentTraderName = nil
 Config.currentTraderRealm = nil
 Config.currentTraderMoney = nil
-
 Config.Portals = {
     "Portal: Darnassus",
     "Portal: Stormwind",
@@ -45,7 +40,6 @@ Config.Portals = {
     "Portal: Thunder Bluff",
     "Portal: Undercity",
 }
-
 -- Define default settings - these will be used if the saved variables are not found
 ThicPortalSettings = {
     totalGold = 0,
@@ -160,7 +154,7 @@ function Config.initializeSavedVariables()
     Config.Settings.tipMessage = TipMessage or Config.Settings.tipMessage
     Config.Settings.noTipMessage = NoTipMessage or Config.Settings.noTipMessage
     --
-    Config.Settings.hideIcon = hideIcon or Config.Settings.hideIcon
+    Config.Settings.hideIcon = HideIcon or Config.Settings.hideIcon
     Config.Settings.ApproachMode = ApproachMode or Config.Settings.ApproachMode
 
     if not Config.Settings.toggleButtonPosition then
