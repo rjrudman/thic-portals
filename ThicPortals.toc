@@ -2,7 +2,16 @@
 ## Title: Thic-Portals
 ## Notes: Automatically invites players who request a portal and sends them a whisper asking for their desired destination if not specified.
 ## Author: Thic-Ashbringer EU
-## Version: 1.2.2
-## SavedVariables: ThicPortalsSaved, BanList, IntentKeywords, DestinationKeywords, ServiceKeywords, InviteMessage, InviteMessageWithoutDestination, TipMessage, NoTipMessage, HideIcon, ApproachMode
+## Version: 1.3.0
+## SavedVariables: ThicPortalSettings, ThicPortalsSaved, BanList, IntentKeywords, DestinationKeywords, ServiceKeywords, inviteMessage, inviteMessageWithoutDestination, tipMessage, noTipMessage, hideIcon, ApproachMode
 
+# Embeds
+# Libs\AceGUI-3.0\AceGUI-3.0.xml (leaving for future reference although unused)
+
+# Core and Config
+Config.lua
+Utils.lua
+UI.lua
+InviteTrade.lua
+Events.lua
 ThicPortals.lua
