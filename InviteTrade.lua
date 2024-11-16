@@ -12,6 +12,44 @@ local function playMatchSound()
     end
 end
 
+-- Function to match food and water requests
+local function matchFoodAndWaterRequests(message)
+    local isFoodRequested = false
+    local isWaterRequested = false
+
+    for foodKeyword in Config.Settings.FoodKeywords do
+        if string.find(message:lower(), foodKeyword:lower()) then
+            isFoodRequested = true
+        end
+    end
+
+    for waterKeyword in Config.Settings.WaterKeywords do
+        if string.find(message:lower(), waterKeyword:lower()) then
+            isWaterRequested = true
+        end
+    end
+
+    return isFoodRequested, isWaterRequested
+end
+
+-- Function to update the destination of a pending invite
+local function updatePendingInviteDestination(playerName, message)
+    local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
+    if destinationPosition and Events.pendingInvites[playerName] then
+        Events.pendingInvites[playerName].destination = destinationKeyword
+        if Events.pendingInvites[playerName].destinationValue then
+            Events.pendingInvites[playerName].destinationValue:SetText(destinationKeyword)
+        end
+
+        print("|cff87CEEB[Thic-Portals]|r Updated destination for " .. playerName .. " to " .. destinationKeyword)
+
+        if Events.pendingInvites[playerName].portalButton then
+            -- Set the icon texture for the portal spell
+            UI.setIconSpell(Events.pendingInvites[playerName].portalButton, destinationKeyword)
+        end
+    end
+end
+
 -- Function to handle sending an invite to a player
 function InviteTrade.invitePlayer(sender)
     InviteUnit(sender)
@@ -101,20 +139,14 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, message, destina
         InviteTrade.handleAdvancedKeywordInvite(sender, playerName, message)
     end
 
-    -- Update pending invite destination if a destination keyword is found in the new message
-    InviteTrade.updatePendingInviteDestination(playerName, message)
-end
+    -- local isFoodRequested, isWaterRequested = matchFoodAndWaterRequests(message)
 
--- Function to update the destination of a pending invite
-function InviteTrade.updatePendingInviteDestination(playerName, message)
-    local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
-    if destinationPosition and Events.pendingInvites[playerName] then
-        Events.pendingInvites[playerName].destination = destinationKeyword
-        if Events.pendingInvites[playerName].destinationValue then
-            Events.pendingInvites[playerName].destinationValue:SetText(destinationKeyword)
-        end
-        print("|cff87CEEB[Thic-Portals]|r Updated destination for " .. playerName .. " to " .. destinationKeyword)
-    end
+    -- if isFoodRequested or isWaterRequested then
+    --     print("|cff87CEEB[Thic-Portals]|r " .. playerName .. " requested " .. (isFoodRequested and "food" or "") .. (isFoodRequested and isWaterRequested and " and " or "") .. (isWaterRequested and "water" or "") .. ".")
+    -- end
+
+    -- Update pending invite destination if a destination keyword is found in the new message
+    updatePendingInviteDestination(playerName, message)
 end
 
 -- Function to set an expiry timer for pending invites
@@ -162,6 +194,52 @@ function InviteTrade.watchForPlayerProximity(sender)
             ticker:Cancel() -- Cancel the ticker if the player is no longer in the party
         end
     end)
+end
+
+-- Function to check if there was a tip in the trade
+function InviteTrade.checkTradeTip()
+    print("|cff87CEEB[Thic-Portals]|r Checking trade tip...");
+
+    local copper = tonumber(Config.currentTraderMoney);
+    local silver = math.floor((copper % 10000) / 100);
+    local gold = math.floor(copper / 10000);
+    local remainingCopper = copper % 100;
+
+    print(string.format("|cff87CEEB[Thic-Portals]|r Received %dg %ds %dc from the trade.", gold, silver, remainingCopper));
+
+    if gold > 0 or silver > 0 or remainingCopper > 0 then
+        Utils.incrementTradesCompleted();
+        Utils.resetDailyGoldIfNeeded();
+        Utils.addTipToRollingTotal(gold, silver, remainingCopper);
+
+        -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
+        if gold > 8 then
+            SendChatMessage("<3", "WHISPER", nil, Events.pendingInvites[Config.currentTraderName].fullName)
+
+            -- Send an emote "thank" to the player after they have accepted the trade
+            DoEmote("thank", Config.currentTraderName)
+        end
+
+        -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
+        if gold == 69 or silver == 69 or remainingCopper == 69 then
+            SendChatMessage("Nice (⌐□_□)", "WHISPER", nil, Events.pendingInvites[Config.currentTraderName].fullName)
+
+            -- Send an emote "flirt" to the player after they sent a 69 tip
+            DoEmote("flirt", Config.currentTraderName)
+        end
+
+        -- If the gold amount is higher than 8g, send a custom message via whisper saying "<3"
+        if gold == 4 and silver == 20 then
+            SendChatMessage("420 blaze it (⌐□_□)-~", "WHISPER", nil, Events.pendingInvites[Config.currentTraderName].fullName)
+
+            -- Send an emote "silly" to the player after they sent a 420 tip
+            DoEmote("silly", Config.currentTraderName)
+        end
+
+        return true
+    else
+        return false
+    end
 end
 
 _G.InviteTrade = InviteTrade

@@ -37,14 +37,26 @@ Config.currentTraderName = nil
 Config.currentTraderRealm = nil
 Config.currentTraderMoney = nil
 
+Config.Portals = {
+    "Portal: Darnassus",
+    "Portal: Stormwind",
+    "Portal: Ironforge",
+    "Portal: Orgrimmar",
+    "Portal: Thunder Bluff",
+    "Portal: Undercity",
+}
+
 -- Define default settings - these will be used if the saved variables are not found
 ThicPortalSettings = {
     totalGold = 0,
     dailyGold = 0,
     totalTradesCompleted = 0,
-    lastUpdateDate = date("%Y-%m-%d"),
+    lastUpdateDate = nil,
 
-    BanList = {},
+    BanList = {
+        "Mad",
+        "Kitten"
+    },
 
     IntentKeywords = {
         "wtb", "wtf", "want to buy", "looking for", "need", "seeking",
@@ -59,6 +71,12 @@ ThicPortalSettings = {
     ServiceKeywords = {
         "portal", "port", "prt", "portla", "pportal",
         "protal", "pport", "teleport", "tp", "tele"
+    },
+    FoodKeywords = {
+        "food"
+    },
+    WaterKeywords = {
+        "water"
     },
 
     inviteMessage = "[Thic-Portals] Good day! I am creating a portal for you as we speak, please head over - I'm marked with a star.",
@@ -91,6 +109,7 @@ ThicPortalSettings = {
     soundEnabled = true,
     debugMode = false,
     approachMode = false,
+    enableFoodWaterSupport = false,
     optionsPanelHidden = true,
     hideIcon = false,
 
@@ -117,10 +136,19 @@ function Config.initializeSavedVariables()
     end
 
     -- Migrate old saved variables into the new structure if they exist
-    Config.Settings.totalGold = ThicPortalsSaved and ThicPortalsSaved.totalGold or Config.Settings.totalGold
-    Config.Settings.dailyGold = ThicPortalsSaved and ThicPortalsSaved.dailyGold or Config.Settings.dailyGold
-    Config.Settings.totalTradesCompleted = ThicPortalsSaved and ThicPortalsSaved.totalTradesCompleted or Config.Settings.totalTradesCompleted
-    Config.Settings.lastUpdateDate = ThicPortalsSaved and ThicPortalsSaved.lastUpdateDate or Config.Settings.lastUpdateDate
+    if Config.Settings.totalGold == 0 then
+        Config.Settings.totalGold = ThicPortalsSaved and ThicPortalsSaved.totalGold or 0
+    end
+    if Config.Settings.dailyGold == 0 then
+        Config.Settings.dailyGold = ThicPortalsSaved and ThicPortalsSaved.dailyGold or 0
+    end
+    if Config.Settings.totalTradesCompleted == 0 then
+        Config.Settings.totalTradesCompleted = ThicPortalsSaved and ThicPortalsSaved.totalTradesCompleted or 0
+    end
+    --
+    if Config.Settings.lastUpdateDate == nil then
+        Config.Settings.lastUpdateDate = ThicPortalsSaved and ThicPortalsSaved.lastUpdateDate or date("%Y-%m-%d")
+    end
     --
     Config.Settings.BanList = BanList or Config.Settings.BanList
     Config.Settings.IntentKeywords = IntentKeywords or Config.Settings.IntentKeywords
@@ -138,12 +166,22 @@ function Config.initializeSavedVariables()
     if not Config.Settings.toggleButtonPosition then
         Config.Settings.toggleButtonPosition = ThicPortalSettings.ToggleButtonPosition
     end
+    if not Config.Settings.enableFoodWaterSupport then
+        Config.Settings.enableFoodWaterSupport = ThicPortalSettings.enableFoodWaterSupport
+    end
+    if not Config.Settings.FoodKeywords then
+        Config.Settings.FoodKeywords = ThicPortalSettings.FoodKeywords
+    end
+    if not Config.Settings.WaterKeywords then
+        Config.Settings.WaterKeywords = ThicPortalSettings.WaterKeywords
+    end
 
     -- Override addonEnabled to false on startup
     Config.Settings.addonEnabled = false
+    -- Override consecutiveLeavesWithoutPayment to 0 on startup
+    Config.Settings.consecutiveLeavesWithoutPayment = 0
 
     -- Remove old global variables if needed (Version 1.2.2)
-    --
     -- ThicPortalsSaved = nil
     -- BanList = nil
     -- IntentKeywords = nil
@@ -152,9 +190,14 @@ function Config.initializeSavedVariables()
     -- InviteMessage = nil
     -- InviteMessageWithoutDestination = nil
     -- TipMessage = nil
-    -- noTipMessage = nil
+    -- NoTipMessage = nil
     -- hideIcon = nil
     -- ApproachMode = nil
+
+    -- Print all config settings
+    for key, value in pairs(Config.Settings) do
+        print(key, value)
+    end
 end
 
 _G.Config = Config

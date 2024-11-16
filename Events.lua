@@ -155,13 +155,7 @@ end
 function Events.handleTradeComplete()
     if Config.currentTraderName then
         if Events.pendingInvites[Config.currentTraderName] then
-            local gold, silver, copper = math.floor(Config.currentTraderMoney / 10000), math.floor((Config.currentTraderMoney % 10000) / 100), Config.currentTraderMoney % 100
-            Utils.addTipToRollingTotal(gold, silver, copper)
-
-            if Config.currentTraderMoney > 0 then
-                Utils.incrementTradesCompleted()
-                Utils.resetDailyGoldIfNeeded()
-
+            if InviteTrade.checkTradeTip() then
                 -- Send them a thank you!
                 SendChatMessage(Config.Settings.tipMessage, "WHISPER", nil, Events.pendingInvites[Config.currentTraderName].fullName)
             else

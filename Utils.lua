@@ -132,6 +132,86 @@ function Utils.isPlayerBanned(player)
     return false
 end
 
+function Utils.getMatchingPortal(destination)
+    local portal = {
+        matched = false,
+        spellID = 10059,
+        spellName = "Portal: Stormwind",
+    }
+
+    if not destination then
+        return portal
+    end
+
+    -- Use the destination value to initially find the absolute spell match (Portal: Stormwind or Portal: Ironforge or ...)
+    -- If no match is found, return nil
+
+    -- Destination could be "if, "ironforge", "sw", "stormwind", "darn", "darna", "darnas", "darnasuss", ... - we need to take account for typos, abbreviations, etc.
+    -- The best bet is to check every letter of the destination word and check if it matches in the destination part of the Portal: MATCH spell name
+    -- The official spell destination name with the most matches is the correct one
+    -- If there are multiple matching names, we can use the one with the most matches
+
+    -- Example: destination = "darn" produces "Portal: Darnassus" as the best match
+
+    -- Config.Portals = {
+    --     "Portal: Darnassus",
+    --     "Portal: Stormwind",
+    --     "Portal: Ironforge",
+    --     "Portal: Orgrimmar",
+    --     "Portal: Thunder Bluff",
+    --     "Portal: Undercity",
+    -- }
+
+    local destinationLength = string.len(destination)
+    local bestMatch = nil
+    local maxMatches = 0
+    for _, portalName in ipairs(Config.Portals) do
+        local spellName = portalName:match("Portal: (.+)")
+        local spellDestination = spellName:lower()
+
+        local matches = 0
+        for i = 1, destinationLength do
+            local letter = destination:sub(i, i)
+            if spellDestination:find(letter) then
+                matches = matches + 1
+            end
+        end
+
+        if matches > maxMatches then
+            maxMatches = matches
+            bestMatch = portalName
+        end
+    end
+
+    if bestMatch then
+        print("Best match for destination: " .. bestMatch)
+
+        local spellID = nil
+
+        if bestMatch == "Portal: Darnassus" then
+            spellID = 11419
+        elseif bestMatch == "Portal: Stormwind" then
+            spellID = 10059
+        elseif bestMatch == "Portal: Ironforge" then
+            spellID = 11416
+        elseif bestMatch == "Portal: Orgrimmar" then
+            spellID = 11417
+        elseif bestMatch == "Portal: Thunder Bluff" then
+            spellID = 11420
+        elseif bestMatch == "Portal: Undercity" then
+            spellID = 11418
+        end
+
+        portal = {
+            matched = true,
+            spellID = spellID,
+            spellName = bestMatch,
+        }
+    end
+
+    return portal
+end
+
 _G.Utils = Utils
 
 return Utils

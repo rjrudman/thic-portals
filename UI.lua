@@ -21,6 +21,7 @@ end
 -- Initialize saved variables to Config (Version 1.3.0)
 UI.hideIconCheckbox = AceGUI:Create("CheckBox")
 UI.approachModeCheckbox = AceGUI:Create("CheckBox");
+UI.enableFoodWaterSupportCheckbox = AceGUI:Create("CheckBox");
 UI.addonEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.soundEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.debugModeCheckbox = AceGUI:Create("CheckBox");
@@ -189,12 +190,65 @@ function UI.createToggleButton()
     end
 end
 
+-- Function to apply an icon texture representing the portal spell attributed to the button
+function UI.setIconSpellTexture(portalButton, portal)
+    if not portalButton.icon then
+        -- Apply the icon texture to the button
+        local icon = portalButton:CreateTexture(nil, "BACKGROUND")
+
+        icon:SetAllPoints()
+
+        portalButton.icon = icon
+    end
+
+    -- If portal.matched === false, the player's destination did not match any known portal so disable the button
+    if portal.matched then
+        -- Enable the button
+        portalButton:SetEnabled(true)
+
+        -- Get the icon texture for the portal spell
+        local iconTexture = GetSpellTexture(portal.spellID)
+        if iconTexture then
+            -- Set the icon texture for the portal spell
+            portalButton.icon:SetTexture(iconTexture)
+
+            -- Set the icon to full color
+            portalButton.icon:SetDesaturated(false)
+        else
+            print("Error: Could not fetch icon for spell name " .. portal.spellName)
+        end
+    else
+        -- Disable the button
+        portalButton:SetEnabled(false)
+
+        -- Set the icon to a question mark
+        portalButton.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        -- Grey it out
+        portalButton.icon:SetDesaturated(true)
+    end
+end
+
+function UI.setIconSpell(portalButton, destination)
+    local portal = Utils.getMatchingPortal(destination)
+
+    -- Set up secure actions for casting the spell
+    portalButton:SetAttribute("type", "spell")
+    portalButton:SetAttribute("spell", portal.spellName)
+
+    if portal.matched then
+        print("Setting icon spell for " .. destination)
+    end
+
+    -- Set the icon texture for the portal spell
+    UI.setIconSpellTexture(portalButton, portal)
+end
+
 -- Function to create and show the ticket window
 function UI.showTicketWindow(sender, destination)
     -- Create the main frame
     local ticketFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    ticketFrame:SetSize(220, 160) -- Initial size
-    ticketFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", UIParent:GetWidth() * 0.75, UIParent:GetHeight() * 0.75)
+    ticketFrame:SetSize(220, 250) -- Initial size
+    ticketFrame:SetPoint("CENTER", UIParent, "CENTER", UIParent:GetWidth() * 0.3, 0)
     ticketFrame:SetBackdrop({
         bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
         edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
@@ -202,44 +256,11 @@ function UI.showTicketWindow(sender, destination)
         insets = { left = 11, right = 12, top = 12, bottom = 11 }
     })
     ticketFrame:SetBackdropColor(0, 0, 0, 1)
-
-    -- Make the frame moveable
-    local title = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     ticketFrame:EnableMouse(true)
     ticketFrame:SetMovable(true)
     ticketFrame:RegisterForDrag("LeftButton")
     ticketFrame:SetScript("OnDragStart", ticketFrame.StartMoving)
     ticketFrame:SetScript("OnDragStop", ticketFrame.StopMovingOrSizing)
-
-    -- Create the title text
-    title:SetPoint("TOP", 0, -20)
-    title:SetText("NEW TICKET")
-
-    -- Create the sender label
-    local senderLabel = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    senderLabel:SetPoint("TOPLEFT", 20, -50)
-    senderLabel:SetText("Player:")
-
-    -- Create the sender value
-    local senderValue = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    senderValue:SetPoint("LEFT", senderLabel, "RIGHT", 5, 0)
-    senderValue:SetText(sender)
-
-    -- Create the destination label
-    local destinationLabel = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    destinationLabel:SetPoint("TOPLEFT", senderLabel, "BOTTOMLEFT", 0, -10)
-    destinationLabel:SetText("Destination:")
-
-    -- Create the destination value
-    local destinationValue = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    destinationValue:SetPoint("LEFT", destinationLabel, "RIGHT", 5, 0)
-    destinationValue:SetText(destination or "Requesting...")
-
-    -- Store reference to the destinationValue in Events.pendingInvites
-    if Events.pendingInvites[sender] then
-        Events.pendingInvites[sender].destinationValue = destinationValue
-        Events.pendingInvites[sender].ticketFrame = ticketFrame
-    end
 
     -- Create the close button
     local closeButton = CreateFrame("Button", nil, ticketFrame, "UIPanelCloseButton")
@@ -248,18 +269,60 @@ function UI.showTicketWindow(sender, destination)
         ticketFrame:Hide()
     end)
 
+    -- Create a container frame for labels
+    local labelContainer = CreateFrame("Frame", nil, ticketFrame)
+    labelContainer:SetSize(200, 100) -- Adjust size to fit labels
+    labelContainer:SetPoint("TOP", ticketFrame, "TOP", 0, -10) -- Position inside ticketFrame
+
+    -- Make the frame moveable
+    local title = labelContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    title:SetPoint("TOP", 0, -20)
+    title:SetText("NEW TICKET")
+
+    -- Create the sender label
+    local senderLabel = labelContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    senderLabel:SetPoint("TOPLEFT", 20, -50)
+    senderLabel:SetText("Player:")
+
+    -- Create the sender value
+    local senderValue = labelContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    senderValue:SetPoint("LEFT", senderLabel, "RIGHT", 5, 0)
+    senderValue:SetText(sender)
+
+    -- Create the destination label
+    local destinationLabel = labelContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    destinationLabel:SetPoint("TOPLEFT", senderLabel, "BOTTOMLEFT", 0, -10)
+    destinationLabel:SetText("Destination:")
+
+    -- Create the destination value
+    local destinationValue = labelContainer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    destinationValue:SetPoint("LEFT", destinationLabel, "RIGHT", 5, 0)
+    destinationValue:SetText(destination or "Requesting...")
+
     -- Create the distance label
-    local distanceLabel = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local distanceLabel = labelContainer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     distanceLabel:SetPoint("TOPLEFT", destinationLabel, "BOTTOMLEFT", 0, -10)
     distanceLabel:SetText("Distance: N/A")
 
     -- Update the distance label
     Utils.updateDistanceLabel(sender, distanceLabel)
 
+    -- Create a button to start casting the portal creation spell that's relevant for this ticket (e.g., Portal: Stormwind)
+    local portalButton = CreateFrame("Button", nil, ticketFrame, "SecureActionButtonTemplate")
+
+    portalButton:SetSize(64, 64) -- Adjust size for icon display
+    portalButton:SetPoint("TOP", labelContainer, "BOTTOM", 0, -20)
+
+    -- attach it to the player object for reference
+    Events.pendingInvites[sender].portalButton = portalButton
+
+    -- Set the icon texture for the portal spell
+    UI.setIconSpell(Events.pendingInvites[sender].portalButton, destination)
+
     -- Create the remove button
     local removeButton = CreateFrame("Button", nil, ticketFrame, "UIPanelButtonTemplate")
     removeButton:SetSize(80, 22)
-    removeButton:SetPoint("BOTTOM", 0, 15)
+    removeButton:SetPoint("TOP", portalButton, "BOTTOM", 0, -10)
     removeButton:SetText("Remove")
     removeButton:SetEnabled(false)
     removeButton:SetScript("OnClick", function()
@@ -279,6 +342,7 @@ function UI.showTicketWindow(sender, destination)
         destinationLabel:Hide()
         destinationValue:Hide()
         distanceLabel:Hide()
+        portalButton:Hide()
 
         completeText = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         completeText:SetPoint("CENTER", -10, -10)
@@ -288,6 +352,12 @@ function UI.showTicketWindow(sender, destination)
         tickIcon:SetTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready")
         tickIcon:SetPoint("LEFT", completeText, "RIGHT", 5, 0)
         tickIcon:SetSize(20, 20)
+
+        ticketFrame:SetHeight(190)
+
+        removeButton:ClearAllPoints()
+        removeButton:SetPoint("TOP", completeText, "BOTTOM", 5, -30) -- Positioned below "Complete" with a gap
+        removeButton:Show()
     end
 
     -- Function to hide "Complete TICK"
@@ -295,18 +365,6 @@ function UI.showTicketWindow(sender, destination)
         if completeText then completeText:Hide() end
         if tickIcon then tickIcon:Hide() end
     end
-
-    -- Enable the remove button when the player has traveled
-    ticker = C_Timer.NewTicker(1, function()
-        if Events.pendingInvites[sender] and Events.pendingInvites[sender].travelled then
-            -- Update to show "Complete TICK"
-            showCompleteTick()
-            -- Enable the remove button
-            removeButton:SetEnabled(true)
-            -- Cancel the ticker
-            ticker:Cancel()
-        end
-    end, 180)
 
     local viewingMessage = false
     local originalMessageLabel = nil
@@ -331,6 +389,8 @@ function UI.showTicketWindow(sender, destination)
             distanceLabel:Hide()
             -- Hide the remove button
             removeButton:Hide()
+            -- Hide the portal button
+            portalButton:Hide()
 
             -- Create a label for the original message
             originalMessageLabel = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -342,7 +402,7 @@ function UI.showTicketWindow(sender, destination)
             local requiredHeight = Utils.calculateTextHeight(originalMessageValue, Events.pendingInvites[sender].originalMessage, 180)
 
             -- Adjust the frame height based on the required height
-            local newHeight = 160 - 40 + requiredHeight  -- Base height + required height
+            local newHeight = 180 - 40 + requiredHeight  -- Base height + required height
             ticketFrame:SetHeight(newHeight)
 
             -- Display the original message
@@ -358,7 +418,7 @@ function UI.showTicketWindow(sender, destination)
             iconButton:SetNormalTexture("Interface\\Icons\\INV_Letter_15")
 
             -- Reset the frame size to its original dimensions
-            ticketFrame:SetHeight(160)
+            ticketFrame:SetHeight(250)
 
             -- Show the destination label and value
             destinationLabel:Show()
@@ -367,11 +427,33 @@ function UI.showTicketWindow(sender, destination)
             distanceLabel:Show()
             -- Show the remove button
             removeButton:Show()
+            -- Show the portal button
+            portalButton:Show()
             -- Hide the original message label and value
             originalMessageLabel:Hide()
             originalMessageValue:Hide()
         end
     end)
+
+    -- Enable the remove button when the player has traveled
+    ticker = C_Timer.NewTicker(1, function()
+        if Events.pendingInvites[sender] and Events.pendingInvites[sender].travelled then
+            -- Update to show "Complete TICK"
+            showCompleteTick()
+            -- Enable the remove button
+            removeButton:SetEnabled(true)
+            -- Disable the icon button
+            iconButton:SetEnabled(false)
+            -- Cancel the ticker
+            ticker:Cancel()
+        end
+    end, 180)
+
+    -- Store reference to the destinationValue in Events.pendingInvites
+    if Events.pendingInvites[sender] then
+        Events.pendingInvites[sender].destinationValue = destinationValue
+        Events.pendingInvites[sender].ticketFrame = ticketFrame
+    end
 
     -- Show the frame
     ticketFrame:Show()
@@ -477,6 +559,16 @@ function UI.createOptionsPanel()
             print("|cff87CEEB[Thic-Portals]|r Approach mode disabled.")
         end
     end)
+
+    -- Enable Food and Water Support Checkbox
+    -- addCheckbox(checkboxGroup, "Food and Water Support", UI.enableFoodWaterSupportCheckbox, Config.Settings.enableFoodWaterSupport, function(_, _, value)
+    --     Config.Settings.enableFoodWaterSupport = value
+    --     if Config.Settings.enableFoodWaterSupport then
+    --         print("|cff87CEEB[Thic-Portals]|r Food and Water support enabled.")
+    --     else
+    --         print("|cff87CEEB[Thic-Portals]|r Food and Water support disabled.")
+    --     end
+    -- end)
 
     scroll:AddChild(checkboxGroup)
 
@@ -672,19 +764,14 @@ function UI.createOptionsPanel()
     end
 
     -- Creating Keyword Sections
-    createKeywordSection("|cFFFFD700Ban List Management|r", BanList, addToBanListKeywords, removeFromBanListKeywords)
+    createKeywordSection("|cFFFFD700Ban List Management|r", Config.Settings.BanList, addToBanListKeywords, removeFromBanListKeywords)
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Intent Keywords Management|r", IntentKeywords, addToIntentKeywords, removeFromIntentKeywords)
+    createKeywordSection("|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, addToIntentKeywords, removeFromIntentKeywords)
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Destination Keywords Management|r", DestinationKeywords, addToDestinationKeywords, removeFromDestinationKeywords)
+    createKeywordSection("|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, addToDestinationKeywords, removeFromDestinationKeywords)
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Service Keywords Management|r", ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords)
+    createKeywordSection("|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords)
     scroll:AddChild(largeVerticalGap)
-
-    -- On close, run UI.hideOptionsPanel
-    optionsPanel:SetCallback("OnClose", function(widget)
-        UI.hideOptionsPanel()
-    end)
 
     -- Save the options panel reference in the config for other modules to use
     UI.optionsPanel = optionsPanel
@@ -718,6 +805,27 @@ function UI.hideOptionsPanel()
 
         Config.Settings.optionsPanelHidden = true
     end
+end
+
+-- Function to show a food and water request in the UI
+function UI.showFoodWaterRequest(sender, foodRequested, waterRequested)
+    local message = ""
+    local iconPath = ""
+
+    if foodRequested and waterRequested then
+        message = "Food and Water requested by " .. sender
+        iconPath = "Interface\\Icons\\INV_Misc_Food_15" -- Example icon path
+    elseif foodRequested then
+        message = "Food requested by " .. sender
+        iconPath = "Interface\\Icons\\INV_Misc_Food_14"
+    elseif waterRequested then
+        message = "Water requested by " .. sender
+        iconPath = "Interface\\Icons\\INV_Drink_04"
+    end
+
+    -- Display the message and icon
+    print(message)
+    -- Code to display the icon in the UI (e.g., create a frame and set the icon texture)
 end
 
 _G.UI = UI
