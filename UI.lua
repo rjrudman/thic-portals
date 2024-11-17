@@ -463,7 +463,6 @@ function UI.showTicketWindow(sender, destination)
             removeButton:SetEnabled(true)
             -- Disable the icon button
             iconButton:SetEnabled(false)
-            iconButton.icon:SetDesaturated(true)
             -- Cancel the ticker
             ticker:Cancel()
         end
