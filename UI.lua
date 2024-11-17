@@ -375,10 +375,13 @@ function UI.showTicketWindow(sender, destination)
     iconButton:SetSize(20, 20)
     iconButton:SetPoint("TOPLEFT", 12, -12)
     iconButton:SetNormalTexture("Interface\\Icons\\INV_Letter_15")
-    iconButton:SetScript("OnClick", toggleMessageView)
 
     function toggleMessageView()
         if not viewingMessage then
+            if Config.Settings.debugMode then
+                print("Toggling to message view")
+            end
+
             viewingMessage = true
 
             -- Change the icon to a back icon that will return us to the original view on click
@@ -399,21 +402,27 @@ function UI.showTicketWindow(sender, destination)
             originalMessageLabel:SetPoint("TOPLEFT", senderLabel, "BOTTOMLEFT", 0, -10)
             originalMessageLabel:SetText("Original Message:")
 
-            -- Create a font string to calculate the height required
-            originalMessageValue = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            local requiredHeight = Utils.calculateTextHeight(originalMessageValue, Events.pendingInvites[sender].originalMessage, 180)
+            if Events.pendingInvites[sender] then
+                -- Create a font string to calculate the height required
+                originalMessageValue = ticketFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+                local requiredHeight = Utils.calculateTextHeight(originalMessageValue, Events.pendingInvites[sender].originalMessage, 180)
 
-            -- Adjust the frame height based on the required height
-            local newHeight = 180 - 40 + requiredHeight  -- Base height + required height
-            ticketFrame:SetHeight(newHeight)
+                -- Adjust the frame height based on the required height
+                local newHeight = 180 - 40 + requiredHeight  -- Base height + required height
+                ticketFrame:SetHeight(newHeight)
 
-            -- Display the original message
-            originalMessageValue:SetPoint("TOPLEFT", originalMessageLabel, "BOTTOMLEFT", 0, -10)
-            originalMessageValue:SetWidth(180)
-            originalMessageValue:SetJustifyH("LEFT")
-            originalMessageValue:SetText(Events.pendingInvites[sender].originalMessage)
-            originalMessageValue:SetWordWrap(true)
+                -- Display the original message
+                originalMessageValue:SetPoint("TOPLEFT", originalMessageLabel, "BOTTOMLEFT", 0, -10)
+                originalMessageValue:SetWidth(180)
+                originalMessageValue:SetJustifyH("LEFT")
+                originalMessageValue:SetText(Events.pendingInvites[sender].originalMessage)
+                originalMessageValue:SetWordWrap(true)
+            end
         else
+            if Config.Settings.debugMode then
+                print("Toggling back to original view")
+            end
+
             viewingMessage = false
 
             -- Change the icon back to the original icon
@@ -436,6 +445,8 @@ function UI.showTicketWindow(sender, destination)
             originalMessageValue:Hide()
         end
     end
+
+    iconButton:SetScript("OnClick", toggleMessageView)
 
     -- Enable the remove button when the player has traveled
     ticker = C_Timer.NewTicker(1, function()
