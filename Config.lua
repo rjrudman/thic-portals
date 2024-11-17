@@ -174,6 +174,8 @@ function Config.initializeSavedVariables()
     Config.Settings.addonEnabled = false
     -- Override consecutiveLeavesWithoutPayment to 0 on startup
     Config.Settings.consecutiveLeavesWithoutPayment = 0
+    -- Override optionsPanelHidden to true on startup
+    Config.Settings.optionsPanelHidden = true
 
     -- Remove old global variables if needed (Version 1.2.2)
     ThicPortalsSaved = nil

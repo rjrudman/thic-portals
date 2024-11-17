@@ -809,12 +809,12 @@ end
 
 -- Show the options panel
 function UI.showOptionsPanel()
-    if Config.Settings.optionsPanelHidden then
-        print("Showing options panel.")
-    end
-
     -- If debug mode is enabled, print a message
     if Config.Settings.debugMode then
+        if Config.Settings.optionsPanelHidden then
+            print("Showing options panel.")
+        end
+
         print("|cff87CEEB[Thic-Portals]|r Showing options panel.")
     end
 
@@ -831,12 +831,12 @@ end
 
 -- Hide the options panel
 function UI.hideOptionsPanel()
-    if Config.Settings.optionsPanelHidden then
-        print("Hiding options panel.")
-    end
-
     -- If debug mode is enabled, print a message
     if Config.Settings.debugMode then
+        if Config.Settings.optionsPanelHidden then
+            print("Hiding options panel.")
+        end
+
         print("|cff87CEEB[Thic-Portals]|r Hiding options panel.")
     end
 
