@@ -16,7 +16,7 @@ end
 
 -- Event handler function
 function Events.onEvent(self, event, ...)
-    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_CHANNEL" then
+    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_CHANNEL" or event == "CHAT_MSG_PARTY" then
         printEvent(event)
 
         local message, sender = ...
