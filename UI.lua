@@ -375,6 +375,7 @@ function UI.showTicketWindow(sender, destination)
     iconButton:SetSize(20, 20)
     iconButton:SetPoint("TOPLEFT", 12, -12)
     iconButton:SetNormalTexture("Interface\\Icons\\INV_Letter_15")
+    iconButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight")
 
     function toggleMessageView()
         if not viewingMessage then
@@ -462,6 +463,7 @@ function UI.showTicketWindow(sender, destination)
             removeButton:SetEnabled(true)
             -- Disable the icon button
             iconButton:SetEnabled(false)
+            iconButton.icon:SetDesaturated(true)
             -- Cancel the ticker
             ticker:Cancel()
         end
