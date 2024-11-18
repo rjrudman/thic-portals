@@ -103,6 +103,33 @@ function Events.onEvent(self, event, ...)
 
         Events.updateTradeMoney()
 
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        local unit, _, spellID = ...
+        if unit == "player" then
+            local spellName = GetSpellInfo(spellID)
+            for _, portalName in ipairs(Config.Portals) do
+                if spellName:lower() == portalName:lower() then
+                    if Config.Settings.debugMode then
+                        print("|cff87CEEB[Thic-Portals]|r Portal to " .. spellName .. " successfully cast!")
+                    end
+
+                    Config.CurrentAlivePortals[spellName] = true
+
+                    -- send just the location name
+                    UI.setAllMatchingPortalButtonsToTrade(spellName)
+
+                    -- Add a timer for a minute's time to remove the portal from the list
+                    C_Timer.After(60, function()
+                        Config.CurrentAlivePortals[spellName] = nil
+
+                        UI.setAllMatchingTradeButtonsToPortal(spellName)
+                    end)
+
+                    break
+                end
+            end
+        end
+
     elseif event == "UI_INFO_MESSAGE" then
         printEvent(event)
 

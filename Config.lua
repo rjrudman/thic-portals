@@ -40,6 +40,7 @@ Config.Portals = {
     "Portal: Thunder Bluff",
     "Portal: Undercity",
 }
+Config.CurrentAlivePortals = {}
 -- Define default settings - these will be used if the saved variables are not found
 ThicPortalSettings = {
     totalGold = 0,

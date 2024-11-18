@@ -45,7 +45,7 @@ local function updatePendingInviteDestination(playerName, message)
 
         if Events.pendingInvites[playerName].portalButton then
             -- Set the icon texture for the portal spell
-            UI.setIconSpell(Events.pendingInvites[playerName].portalButton, destinationKeyword)
+            UI.setIconSpell(Events.pendingInvites[playerName], Events.pendingInvites[playerName].destination)
         end
     end
 end

@@ -228,19 +228,60 @@ function UI.setIconSpellTexture(portalButton, portal)
     end
 end
 
-function UI.setIconSpell(portalButton, destination)
-    local portal = Utils.getMatchingPortal(destination)
+function UI.setIconSpell(inviteData, destination)
+    -- Save the matching portal details to the invite tracker
+    inviteData.portal = Utils.getMatchingPortal(destination)
 
     -- Set up secure actions for casting the spell
-    portalButton:SetAttribute("type", "spell")
-    portalButton:SetAttribute("spell", portal.spellName)
+    inviteData.portalButton:SetAttribute("type", "spell")
+    inviteData.portalButton:SetAttribute("spell", inviteData.portal.spellName)
 
-    if portal.matched then
+    if Config.Settings.debugMode and inviteData.portal.matched then
         print("Setting icon spell for " .. destination)
     end
 
     -- Set the icon texture for the portal spell
-    UI.setIconSpellTexture(portalButton, portal)
+    UI.setIconSpellTexture(inviteData.portalButton, inviteData.portal)
+end
+
+function UI.setTradeIcon(inviteData)
+    if not inviteData.portalButton.icon then
+        -- Create the icon texture if it doesn't exist
+        local icon = inviteData.portalButton:CreateTexture(nil, "BACKGROUND")
+        icon:SetAllPoints()
+        inviteData.portalButton.icon = icon
+    end
+
+    -- Update the icon texture to a "trade" icon
+    inviteData.portalButton.icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01") -- Example trade icon
+    inviteData.portalButton.icon:SetDesaturated(false)
+
+    -- Enable the button and set the tooltip to inform the user that this button opens a trade window with the player
+    inviteData.portalButton:SetEnabled(true)
+    inviteData.portalButton:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        GameTooltip:SetText("Now would be the time to trade " .. inviteData.fullName)
+        GameTooltip:Show()
+    end)
+    inviteData.portalButton:SetScript("OnLeave", function(self)
+        GameTooltip:Hide()
+    end)
+end
+
+function UI.setAllMatchingPortalButtonsToTrade(spellName)
+    for sender, inviteData in pairs(Events.pendingInvites) do
+        if inviteData.portal and inviteData.portal.spellName and inviteData.portal.spellName:lower() == spellName:lower() and inviteData.portalButton then
+            UI.setTradeIcon(inviteData)
+        end
+    end
+end
+
+function UI.setAllMatchingTradeButtonsToPortal(spellName)
+    for sender, inviteData in pairs(Events.pendingInvites) do
+        if inviteData.portal and inviteData.portal.spellName and inviteData.portal.spellName:lower() == spellName:lower() and inviteData.portalButton then
+            UI.setIconSpell(inviteData, inviteData.destination)
+        end
+    end
 end
 
 -- Function to create and show the ticket window
@@ -317,7 +358,12 @@ function UI.showTicketWindow(sender, destination)
     Events.pendingInvites[sender].portalButton = portalButton
 
     -- Set the icon texture for the portal spell
-    UI.setIconSpell(Events.pendingInvites[sender].portalButton, destination)
+    UI.setIconSpell(Events.pendingInvites[sender], destination)
+
+    -- If the portal is already created (check the Config.CurrentAlivePortals table), set the icon to a trade icon
+    if Events.pendingInvites[sender].portal and Events.pendingInvites[sender].portal.matched and Config.CurrentAlivePortals[Events.pendingInvites[sender].portal.spellName] then
+        UI.setTradeIcon(Events.pendingInvites[sender])
+    end
 
     -- Create the remove button
     local removeButton = CreateFrame("Button", nil, ticketFrame, "UIPanelButtonTemplate")

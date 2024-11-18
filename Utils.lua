@@ -137,6 +137,7 @@ function Utils.getMatchingPortal(destination)
         matched = false,
         spellID = 10059,
         spellName = "Portal: Stormwind",
+        locationName = "Stormwind",
     }
 
     if not destination then
@@ -184,7 +185,9 @@ function Utils.getMatchingPortal(destination)
     end
 
     if bestMatch then
-        print("Best match for destination: " .. bestMatch)
+        if Config.Settings.debugMode then
+            print("Best match for destination: " .. bestMatch)
+        end
 
         local spellID = nil
 
@@ -206,6 +209,7 @@ function Utils.getMatchingPortal(destination)
             matched = true,
             spellID = spellID,
             spellName = bestMatch,
+            locationName = bestMatch:match("Portal: (.+)")
         }
     end
 
