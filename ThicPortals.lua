@@ -39,9 +39,7 @@ function handleCommand(msg)
         print("|cff87CEEB[Thic-Portals]|r Addon disabled.")
         UI.addonEnabledCheckbox:SetValue(false)
     elseif command == "show" then
-        UI.ShowToggleButton()
-        Config.Settings.hideIcon = false
-        Config.hideIconCheckbox:SetValue(false)
+        UI.showToggleButton()
         print("|cff87CEEB[Thic-Portals]|r Addon management icon displayed.")
     elseif command == "msg" then
         Config.Settings.inviteMessage = rest

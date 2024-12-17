@@ -151,6 +151,11 @@ function UI.createToggleButton()
         if button == "LeftButton" then
             toggleAddonEnabledState() -- Update the button text
         elseif button == "RightButton" then
+            -- If debug mode log the current options panel state
+            if Config.Settings.debugMode then
+                print("Options Panel Hidden: " .. tostring(Config.Settings.optionsPanelHidden))
+            end
+
             if Config.Settings.optionsPanelHidden then
                 UI.showOptionsPanel()
             else
@@ -535,7 +540,7 @@ function UI.createOptionsPanel()
     tinsert(UISpecialFrames, "ThicPortalsOptionsPanel")
 
     optionsPanel:SetTitle("Thic-Portals Service Configuration")
-    optionsPanel:SetCallback("OnClose", function(widget) optionsPanelHidden = true end)
+    optionsPanel:SetCallback("OnClose", function(widget) Config.Settings.optionsPanelHidden = true end)
     optionsPanel:SetLayout("Fill")
     optionsPanel:SetWidth(480)  -- Set initial width
 
@@ -857,10 +862,6 @@ end
 function UI.showOptionsPanel()
     -- If debug mode is enabled, print a message
     if Config.Settings.debugMode then
-        if Config.Settings.optionsPanelHidden then
-            print("Showing options panel.")
-        end
-
         print("|cff87CEEB[Thic-Portals]|r Showing options panel.")
     end
 
@@ -879,10 +880,6 @@ end
 function UI.hideOptionsPanel()
     -- If debug mode is enabled, print a message
     if Config.Settings.debugMode then
-        if Config.Settings.optionsPanelHidden then
-            print("Hiding options panel.")
-        end
-
         print("|cff87CEEB[Thic-Portals]|r Hiding options panel.")
     end
 
@@ -912,6 +909,15 @@ function UI.showFoodWaterRequest(sender, foodRequested, waterRequested)
     -- Display the message and icon
     print(message)
     -- Code to display the icon in the UI (e.g., create a frame and set the icon texture)
+end
+
+-- Function to show the toggle button
+function UI.showToggleButton()
+    toggleButton:Show()
+    Config.Settings.optionsPanelHidden = true
+
+    Config.Settings.hideIcon = false
+    UI.hideIconCheckbox:SetValue(false)
 end
 
 _G.UI = UI
