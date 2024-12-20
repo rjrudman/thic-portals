@@ -126,8 +126,15 @@ end
 
 -- Main function to handle invites and messages
 function InviteTrade.handleInviteAndMessage(sender, playerName, message, destinationOnly)
+    -- Here we deal with the player ban list
     if Utils.isPlayerBanned(sender) then
         print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is on the ban list. No invite sent.")
+        return
+    end
+
+    -- Here we deal with the keyword ban list
+    if Utils.containsCommonPhrase(message, Config.Settings.KeywordBanList) then
+        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " used a banned keyword. No invite sent.")
         return
     end
 

@@ -52,6 +52,7 @@ ThicPortalSettings = {
         "Mad",
         "Kitten"
     },
+    KeywordBanList = {},
 
     IntentKeywords = {
         "wtb", "wtf", "want to buy", "looking for", "need", "seeking",
@@ -177,6 +178,9 @@ function Config.initializeSavedVariables()
     Config.Settings.consecutiveLeavesWithoutPayment = 0
     -- Override optionsPanelHidden to true on startup
     Config.Settings.optionsPanelHidden = true
+
+    -- Added in 2.0.3
+    Config.Settings.KeywordBanList = Config.KeywordBanList or {}
 
     -- Remove old global variables if needed (Version 1.2.2)
     ThicPortalsSaved = nil

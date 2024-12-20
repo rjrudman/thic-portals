@@ -741,12 +741,22 @@ function UI.createOptionsPanel()
     messageConfigGroup:AddChild(largeVerticalGap)
 
     -- Function to create keyword management section
-    local function createKeywordSection(titleText, keywords, addFunc, removeFunc)
+    local function createKeywordSection(titleText, keywords, addFunc, removeFunc, entityLabel, description)
+        -- Create and add the title label
         local sectionTitle = AceGUI:Create("Label")
         sectionTitle:SetText(titleText)
         sectionTitle:SetFontObject(GameFontNormalLarge)
         sectionTitle:SetFullWidth(true)
         scroll:AddChild(sectionTitle)
+
+        -- Add optional description if provided
+        if description then
+            local sectionDescription = AceGUI:Create("Label")
+            sectionDescription:SetText(description)
+            sectionDescription:SetFontObject(GameFontHighlightSmall)
+            sectionDescription:SetFullWidth(true)
+            scroll:AddChild(sectionDescription)
+        end
 
         -- Create an InlineGroup for keyword management
         local keywordGroup = AceGUI:Create("InlineGroup")
@@ -756,7 +766,7 @@ function UI.createOptionsPanel()
 
         -- Add/Remove Keyword MultiLineEditBox
         local editBox = AceGUI:Create("EditBox")
-        editBox:SetLabel("Add/Remove Keyword")
+        editBox:SetLabel("Add/Remove " .. (entityLabel or "Keyword")) -- Use the passed entityLabel or default to "Keyword"
         editBox:SetWidth(200)
         editBox:DisableButton(true)
         editBox:SetCallback("OnEnterPressed", function(widget, event, text)
@@ -848,13 +858,15 @@ function UI.createOptionsPanel()
     end
 
     -- Creating Keyword Sections
-    createKeywordSection("|cFFFFD700Ban List Management|r", Config.Settings.BanList, addToBanListKeywords, removeFromBanListKeywords)
+    createKeywordSection("|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, addToKeywordBanListKeywords, removeFromKeywordBanListKeywords, "Keyword", "If the addon matches one of these keywords in any evaluated message, it will discard it.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, addToIntentKeywords, removeFromIntentKeywords)
+    createKeywordSection("|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, addToIntentKeywords, removeFromIntentKeywords, "Intent", "Intent is to be used to match the player's intent to trade or request a service.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, addToDestinationKeywords, removeFromDestinationKeywords)
+    createKeywordSection("|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, addToDestinationKeywords, removeFromDestinationKeywords, "Destination", "Destination is to be used to match the player's intended destination.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords)
+    createKeywordSection("|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords, "Service", "Service is to be used to match the player's intended service (portal).")
+    scroll:AddChild(largeVerticalGap)
+    createKeywordSection("|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, addToBanListKeywords, removeFromBanListKeywords, "Player", "The addon will scan each message and discard any message from a player in this list.")
     scroll:AddChild(largeVerticalGap)
 
     -- Save the options panel reference in the config for other modules to use
