@@ -38,6 +38,9 @@ local function toggleAddonEnabledState()
         toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
         UI.addonEnabledCheckbox:SetValue(false)
         print("|cff87CEEB[Thic-Portals]|r You closed the shop.")
+
+        -- Clear any tracked players and their data
+        Events.pendingInvites = {}
     end
 end
 
