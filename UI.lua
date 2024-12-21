@@ -1016,6 +1016,18 @@ function UI.showToggleButton()
     UI.hideIconCheckbox:SetValue(false)
 end
 
+-- Function to reset the position of the toggle button back to default
+function UI.resetToggleButtonPosition()
+    Config.Settings.toggleButtonPosition = {
+        point = "CENTER",
+        x = 0,
+        y = 200
+    }
+
+    toggleButton:ClearAllPoints()
+    toggleButton:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
+end
+
 _G.UI = UI
 
 return UI

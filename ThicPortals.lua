@@ -41,6 +41,9 @@ function handleCommand(msg)
     elseif command == "show" then
         UI.showToggleButton()
         print("|cff87CEEB[Thic-Portals]|r Addon management icon displayed.")
+    elseif command == "reset" then
+        UI.resetToggleButtonPosition()
+        print("|cff87CEEB[Thic-Portals]|r Addon management icon position reset.")
     elseif command == "msg" then
         Config.Settings.inviteMessage = rest
         print("|cff87CEEB[Thic-Portals]|r Invite message set to: " .. rest)
