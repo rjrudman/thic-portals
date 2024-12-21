@@ -111,12 +111,12 @@ ThicPortalSettings = {
 
     prices = {
         food = {
-            ["Conjured Cinnamon Roll"] = 25,
-            ["Conjured Sweet Roll"] = 25,
+            ["Conjured Cinnamon Roll"] = 2500,
+            ["Conjured Sweet Roll"] = 2500,
         },
         water = {
-            ["Conjured Crystal Water"] = 25,
-            ["Conjured Sparkling Water"] = 25,
+            ["Conjured Crystal Water"] = 2500,
+            ["Conjured Sparkling Water"] = 2500,
         },
     },
 

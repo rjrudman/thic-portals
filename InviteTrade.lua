@@ -283,12 +283,12 @@ function InviteTrade.sendFoodAndWaterStockMessage(playerName, playerClass)
         foodStock = foodCount .. " x Conjured Cinnamon Roll " .. "(20x: " .. Utils.formatCopperValue(Config.Settings.prices.food["Conjured Cinnamon Roll"] * 20) .. ")"
     end
     -- Check if the player has rank 6 water in their inventory
-    local waterCount = GetItemCount(8077, false)
+    local waterCount = GetItemCount(8078, false)
     if waterCount > 0 then
         waterStock = waterCount .. " x Conjured Sparkling Water " .. "(20x: " .. Utils.formatCopperValue(Config.Settings.prices.water["Conjured Sparkling Water"] * 20) .. ")"
     end
     -- Check if the player has rank 7 water in their inventory
-    local waterCount = GetItemCount(2136, false)
+    local waterCount = GetItemCount(8079, false)
     if waterCount > 0 then
         waterStock = waterCount .. " x Conjured Crystal Water " .. "(20x: " .. Utils.formatCopperValue(Config.Settings.prices.water["Conjured Crystal Water"] * 20) .. ")"
     end
@@ -307,8 +307,19 @@ function InviteTrade.sendFoodAndWaterStockMessage(playerName, playerClass)
         targetIsManaUser = true
     end
 
-    if targetIsManaUser and (waterStock or foodStock) then
-        SendChatMessage("I have " .. waterStock .. " and " .. foodStock .. " in stock if you require it - just ask!", "WHISPER", nil, playerName)
+    -- if debug mode log both food and water stock
+    if Config.Settings.debugMode then
+        print("|cff87CEEB[Thic-Portals]|r Food stock: " .. (foodStock or "none"))
+        print("|cff87CEEB[Thic-Portals]|r Water stock: " .. (waterStock or "none"))
+    end
+
+    if targetIsManaUser then
+        if waterStock and foodStock then
+            SendChatMessage("I have " .. waterStock .. " and " .. foodStock .. " in stock if you require it - just ask!", "WHISPER", nil, playerName)
+        elseif waterStock or foodStock then
+            local stock = waterStock or foodStock
+            SendChatMessage("I have " .. stock .. " in stock if you require it - just ask!", "WHISPER", nil, playerName)
+        end
     elseif foodStock then
         SendChatMessage("I have " .. foodStock .. " in stock if you require it - just ask!", "WHISPER", nil, playerName)
     end
