@@ -121,7 +121,7 @@ function InviteTrade.handleAdvancedKeywordInvite(message)
 end
 
 -- Main function to handle invites and messages
-function InviteTrade.handleInviteAndMessage(sender, playerName, message, destinationOnly)
+function InviteTrade.handleInviteAndMessage(sender, playerName, playerClass, message, destinationOnly)
     -- Here we deal with the player ban list
     if Utils.isPlayerBanned(sender) then
         print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is on the ban list. No invite sent.")
@@ -149,8 +149,10 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, message, destina
         destinationKeyword = InviteTrade.handleAdvancedKeywordInvite(message)
     end
 
-    InviteTrade.invitePlayer(sender)
-    InviteTrade.createPendingInvite(playerName, playerClass, sender, message, destinationKeyword)
+    if destinationKeyword then
+        InviteTrade.invitePlayer(sender)
+        InviteTrade.createPendingInvite(playerName, playerClass, sender, message, destinationKeyword)
+    end
 
     -- local isFoodRequested, isWaterRequested = matchFoodAndWaterRequests(message)
 
@@ -262,6 +264,14 @@ function InviteTrade.sendFoodAndWaterStockMessage(playerName, playerClass)
     -- waterStock should be a string in the following format: "20 x Conjured Crystal Water"
     local waterStock = nil
 
+    -- -- get the current party member count
+    -- local partyMemberCount = GetNumPartyMembers()
+
+    -- -- calculate new party member level by using the party member count
+    -- local level = UnitLevel("party" .. partyMemberCount)
+
+    -- print("|cff87CEEB[Thic-Portals]|r Calculated party member level: " .. level)
+
     -- Check if the player has rank 6 food in their inventory
     local foodCount = GetItemCount(8076, false)
     if foodCount > 0 then
@@ -298,9 +308,7 @@ function InviteTrade.sendFoodAndWaterStockMessage(playerName, playerClass)
     end
 
     if targetIsManaUser and (waterStock or foodStock) then
-        local message = "I have " .. waterStock .. " and " .. foodStock .. " in stock if you require it - just ask!"
-        --
-        SendChatMessage(message, "WHISPER", nil, playerName)
+        SendChatMessage("I have " .. waterStock .. " and " .. foodStock .. " in stock if you require it - just ask!", "WHISPER", nil, playerName)
     elseif foodStock then
         SendChatMessage("I have " .. foodStock .. " in stock if you require it - just ask!", "WHISPER", nil, playerName)
     end

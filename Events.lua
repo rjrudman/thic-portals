@@ -56,7 +56,7 @@ function Events.onEvent(self, event, ...)
             end
 
             -- Handle the invite and message logic
-            InviteTrade.handleInviteAndMessage(nameAndServer, name, message, destinationOnly)
+            InviteTrade.handleInviteAndMessage(nameAndServer, name, englishClass, message, destinationOnly)
         end
 
     elseif event == "GROUP_ROSTER_UPDATE" then
