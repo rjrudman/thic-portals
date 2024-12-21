@@ -83,7 +83,7 @@ end
 
 -- Function to handle invite and message for common phrases
 function InviteTrade.handleCommonPhraseInvite(message)
-    local _, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
+    local _, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.commonPhrases)
 
     return destinationKeyword
 end
@@ -143,10 +143,12 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, playerClass, mes
     local destinationKeyword = nil
     if Utils.containsCommonPhrase(message, Config.Settings.commonPhrases) then
         destinationKeyword = InviteTrade.handleCommonPhraseInvite(message)
-    elseif destinationOnly then
-        destinationKeyword = InviteTrade.handleDestinationOnlyInvite(message)
-    else
-        destinationKeyword = InviteTrade.handleAdvancedKeywordInvite(message)
+    elseif not Config.Settings.disableSmartMatching then
+        if destinationOnly then
+            destinationKeyword = InviteTrade.handleDestinationOnlyInvite(message)
+        else
+            destinationKeyword = InviteTrade.handleAdvancedKeywordInvite(message)
+        end
     end
 
     if destinationKeyword then

@@ -106,6 +106,7 @@ ThicPortalSettings = {
     debugMode = false,
     approachMode = false,
     enableFoodWaterSupport = false,
+    disableSmartMatching = false,
     optionsPanelHidden = true,
     hideIcon = false,
 
@@ -175,6 +176,9 @@ function Config.initializeSavedVariables()
     end
     if not Config.Settings.enableFoodWaterSupport then
         Config.Settings.enableFoodWaterSupport = ThicPortalSettings.enableFoodWaterSupport
+    end
+    if not Config.Settings.disableSmartMatching then
+        Config.Settings.disableSmartMatching = ThicPortalSettings.disableSmartMatching
     end
     if not Config.Settings.FoodKeywords then
         Config.Settings.FoodKeywords = ThicPortalSettings.FoodKeywords

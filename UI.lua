@@ -22,6 +22,7 @@ end
 UI.hideIconCheckbox = AceGUI:Create("CheckBox")
 UI.approachModeCheckbox = AceGUI:Create("CheckBox");
 UI.enableFoodWaterSupportCheckbox = AceGUI:Create("CheckBox");
+UI.disableSmartMatchingCheckbox = AceGUI:Create("CheckBox");
 UI.addonEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.soundEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.debugModeCheckbox = AceGUI:Create("CheckBox");
@@ -54,6 +55,7 @@ local function addCheckbox(group, label, checkbox, initialValue, callback)
     checkbox:SetLabel(label)
     checkbox:SetValue(initialValue)
     checkbox:SetCallback("OnValueChanged", callback)
+    checkbox:SetWidth(250)
     group:AddChild(checkbox)
 
     -- Add tiny vertical gap
@@ -718,6 +720,16 @@ function UI.createOptionsPanel()
         end
     end)
 
+    -- Disable smart matching and use only common phrase matching
+    addCheckbox(checkboxGroup, "Only Use Common Phrase Matching", UI.disableSmartMatchingCheckbox, Config.Settings.disableSmartMatching, function(_, _, value)
+        Config.Settings.disableSmartMatching = value
+        if Config.Settings.disableSmartMatching then
+            print("|cff87CEEB[Thic-Portals]|r Smart matching disabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Smart matching enabled.")
+        end
+    end)
+
     -- Create a label for the food and water prices
     scroll:AddChild(checkboxGroup)
     scroll:AddChild(largeVerticalGap)
@@ -822,7 +834,26 @@ function UI.createOptionsPanel()
     messageConfigGroup:AddChild(largeVerticalGap)
 
     -- Function to create keyword management section
-    local function createKeywordSection(titleText, keywords, addFunc, removeFunc, entityLabel, description)
+    local function createKeywordSection(titleText, keywords, entityLabel, description)
+        -- Add to Keywords Function
+        function addFunc(keyword)
+            table.insert(keywords, keyword)
+            updateKeywordsText()
+            print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been added.")
+        end
+
+        -- Remove from Keywords Function
+        function removeFunc(keyword)
+            for i, k in ipairs(keywords) do
+                if k == keyword then
+                    table.remove(keywords, i)
+                    updateKeywordsText()
+                    print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been removed.")
+                    break
+                end
+            end
+        end
+
         -- Create and add the title label
         local sectionTitle = AceGUI:Create("Label")
         sectionTitle:SetText(titleText)
@@ -917,37 +948,20 @@ function UI.createOptionsPanel()
         end
 
         updateKeywordsText()
-
-        -- Add to Keywords Function
-        function addFunc(keyword)
-            table.insert(keywords, keyword)
-            updateKeywordsText()
-            print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been added.")
-        end
-
-        -- Remove from Keywords Function
-        function removeFunc(keyword)
-            for i, k in ipairs(keywords) do
-                if k == keyword then
-                    table.remove(keywords, i)
-                    updateKeywordsText()
-                    print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been removed.")
-                    break
-                end
-            end
-        end
     end
 
     -- Creating Keyword Sections
-    createKeywordSection("|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, addToKeywordBanListKeywords, removeFromKeywordBanListKeywords, "Keyword", "If the addon matches one of these keywords in any evaluated message, it will discard it.")
+    createKeywordSection("|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, "Keyword", "If the addon matches one of these keywords in any evaluated message, it will discard it.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, addToIntentKeywords, removeFromIntentKeywords, "Intent", "Intent is to be used to match the player's intent to trade or request a service.")
+    createKeywordSection("|cFFFFD700Common Phrases Management|r", Config.Settings.commonPhrases, "Common Phrase", "Common Phrases are the first compared list of terms before any other keyword matching occurs. The only way to send an automated invite in this scenario is to match one of the below phrases exactly.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, addToDestinationKeywords, removeFromDestinationKeywords, "Destination", "Destination is to be used to match the player's intended destination.")
+    createKeywordSection("|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, "Intent", "Intent is to be used to match the player's intent to trade or request a service.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords, "Service", "Service is to be used to match the player's intended service (portal).")
+    createKeywordSection("|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, "Destination", "Destination is to be used to match the player's intended destination.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, addToBanListKeywords, removeFromBanListKeywords, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'.")
+    createKeywordSection("|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, "Service", "Service is to be used to match the player's intended service (portal).")
+    scroll:AddChild(largeVerticalGap)
+    createKeywordSection("|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'.")
     scroll:AddChild(largeVerticalGap)
 
     -- Save the options panel reference in the config for other modules to use
