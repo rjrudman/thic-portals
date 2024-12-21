@@ -63,12 +63,6 @@ function Utils.calculateTextHeight(fontString, text, width)
     return height
 end
 
--- Function to extract player name from full sender string (e.g., "Player-Realm")
-function Utils.extractPlayerName(sender)
-    local name = sender:match("^[^-]+")
-    return name
-end
-
 -- Function to add tip to rolling total
 function Utils.addTipToRollingTotal(gold, silver, copper)
     local totalCopper = gold * 10000 + silver * 100 + copper
@@ -214,6 +208,35 @@ function Utils.getMatchingPortal(destination)
     end
 
     return portal
+end
+
+-- Convert the copper value to a gold, silver, and copper formatted string
+function Utils.formatCopperValue(totalCost)
+    local gold = math.floor(totalCost / 10000)
+    local silver = math.floor((totalCost % 10000) / 100)
+    local copper = totalCost % 100
+
+    local formattedString = ""
+
+    if gold > 0 then
+        formattedString = string.format("%dg", gold)
+    end
+
+    if silver > 0 then
+        if #formattedString > 0 then
+            formattedString = formattedString .. " "
+        end
+        formattedString = formattedString .. string.format("%ds", silver)
+    end
+
+    if copper > 0 then
+        if #formattedString > 0 then
+            formattedString = formattedString .. " "
+        end
+        formattedString = formattedString .. string.format("%dc", copper)
+    end
+
+    return formattedString
 end
 
 _G.Utils = Utils

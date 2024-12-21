@@ -85,6 +85,56 @@ local function addLabelValuePair(labelText, valueText)
     return group
 end
 
+-- Helper function to create a label and small edit that only needs to support 6 number digits
+local function addNumberEditBox(labelText, numberVar, callback)
+    local group = AceGUI:Create("SimpleGroup")
+    group:SetFullWidth(true)
+    group:SetLayout("Flow")
+
+    -- Add spacer between checkboxes
+    local spacer = AceGUI:Create("Label")
+    spacer:SetWidth(30)
+    group:AddChild(spacer)
+
+    -- Create a label element with the formatted copper value (0g, 0s, 0c) that updates after the user confirms a new numberVar value
+    local valueLabel = AceGUI:Create("Label")
+    valueLabel:SetText(Utils.formatCopperValue(numberVar) .. " each (20x " .. Utils.formatCopperValue(numberVar * 20) .. ")")
+    valueLabel:SetWidth(100)
+
+    -- Create an edit box for the number
+    local editBox = AceGUI:Create("EditBox")
+    editBox:SetText(numberVar)
+    editBox:SetWidth(150)
+    editBox:SetLabel(labelText)
+    editBox:SetCallback("OnEnterPressed", function(_, _, text)
+        local value = tonumber(text)
+        callback(value)
+        valueLabel:SetText(Utils.formatCopperValue(value) .. " each (20x " .. Utils.formatCopperValue(value * 20) .. ")")
+    end)
+    group:AddChild(editBox)
+
+    -- Add spacer between checkboxes
+    local spacer = AceGUI:Create("Label")
+    spacer:SetWidth(10)
+    group:AddChild(spacer)
+
+    -- Finally add the value label
+    group:AddChild(valueLabel)
+
+    return group
+end
+
+-- Helper function to add price edit boxes for a category (food or water)
+local function addPriceEditBoxes(group, category, prices)
+    for itemName, price in pairs(prices) do
+        local priceEditBox = addNumberEditBox(itemName .. ":", price, function(value)
+            prices[itemName] = value
+            print("|cff87CEEB[Thic-Portals]|r " .. itemName .. " price updated to " .. value .. ".")
+        end)
+        group:AddChild(priceEditBox)
+    end
+end
+
 -- Helper function to create a label and editbox pair
 local function addMessageMultiLineEditBox(labelText, messageVar, callback)
     local group = AceGUI:Create("SimpleGroup")
@@ -532,6 +582,32 @@ function UI.showTicketWindow(sender, destination)
     ticketFrame:Show()
 end
 
+-- Function to draw gold statistics to the ticket frame
+function UI.drawGoldStatisticsToTicketFrame()
+    if UI.totalGoldLabel and UI.dailyGoldLabel and UI.totalTradesLabel then
+        -- Update the total gold label
+        UI.totalGoldLabel.children[3]:SetText(string.format(
+            "%dg %ds %dc",
+            math.floor(Config.Settings.totalGold / 10000),
+            math.floor((Config.Settings.totalGold % 10000) / 100),
+            Config.Settings.totalGold % 100
+        ))
+
+        -- Update the daily gold label
+        UI.dailyGoldLabel.children[3]:SetText(string.format(
+            "%dg %ds %dc",
+            math.floor(Config.Settings.dailyGold / 10000),
+            math.floor((Config.Settings.dailyGold % 10000) / 100),
+            Config.Settings.dailyGold % 100
+        ))
+
+        -- Update the total trades label
+        UI.totalTradesLabel.children[3]:SetText(
+            Config.Settings.totalTradesCompleted
+        )
+    end
+end
+
 -- Function to create the options panel
 function UI.createOptionsPanel()
     optionsPanel = AceGUI:Create("Frame")
@@ -545,9 +621,9 @@ function UI.createOptionsPanel()
     optionsPanel:SetTitle("Thic-Portals Service Configuration")
     optionsPanel:SetCallback("OnClose", function(widget) Config.Settings.optionsPanelHidden = true end)
     optionsPanel:SetLayout("Fill")
-    optionsPanel:SetWidth(480)  -- Set initial width
+    optionsPanel:SetWidth(480)
 
-    setMinWidth(optionsPanel, 480)  -- Ensure the width never goes below 1200 pixels
+    setMinWidth(optionsPanel, 480) -- Ensure the width never goes below the set value
 
     local largeVerticalGap = AceGUI:Create("Label")
     largeVerticalGap:SetText("\n\n")
@@ -561,19 +637,18 @@ function UI.createOptionsPanel()
     tinyVerticalGap:SetText("")
     tinyVerticalGap:SetFullWidth(true)
 
-    -- Create a scroll frame
+    -- Create a scroll container
     local scrollcontainer = AceGUI:Create("SimpleGroup")
     scrollcontainer:SetFullWidth(true)
     scrollcontainer:SetFullHeight(true)
     scrollcontainer:SetLayout("Fill")
-
     optionsPanel:AddChild(scrollcontainer)
 
     local scroll = AceGUI:Create("ScrollFrame")
     scroll:SetLayout("Flow")
     scrollcontainer:AddChild(scroll)
 
-    -- General Settings Title
+    -- Example content
     local generalSettingsTitle = AceGUI:Create("Label")
     generalSettingsTitle:SetText("|cFFFFD700General Settings|r")
     generalSettingsTitle:SetFontObject(GameFontNormalLarge)
@@ -634,16 +709,46 @@ function UI.createOptionsPanel()
     end)
 
     -- Enable Food and Water Support Checkbox
-    -- addCheckbox(checkboxGroup, "Food and Water Support", UI.enableFoodWaterSupportCheckbox, Config.Settings.enableFoodWaterSupport, function(_, _, value)
-    --     Config.Settings.enableFoodWaterSupport = value
-    --     if Config.Settings.enableFoodWaterSupport then
-    --         print("|cff87CEEB[Thic-Portals]|r Food and Water support enabled.")
-    --     else
-    --         print("|cff87CEEB[Thic-Portals]|r Food and Water support disabled.")
-    --     end
-    -- end)
+    addCheckbox(checkboxGroup, "Food and Water Support", UI.enableFoodWaterSupportCheckbox, Config.Settings.enableFoodWaterSupport, function(_, _, value)
+        Config.Settings.enableFoodWaterSupport = value
+        if Config.Settings.enableFoodWaterSupport then
+            print("|cff87CEEB[Thic-Portals]|r Food and Water support enabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Food and Water support disabled.")
+        end
+    end)
 
+    -- Create a label for the food and water prices
     scroll:AddChild(checkboxGroup)
+    scroll:AddChild(largeVerticalGap)
+
+    -- Create a group for food and water prices
+    local foodWaterPricesGroup = AceGUI:Create("SimpleGroup")
+    foodWaterPricesGroup:SetFullWidth(true)
+    foodWaterPricesGroup:SetLayout("Flow")
+
+    -- Create a title for the food and water prices
+    local foodWaterPricesTitle = AceGUI:Create("Label")
+    foodWaterPricesTitle:SetText("|cFFFFD700Food and Water Prices|r")
+    foodWaterPricesTitle:SetFontObject(GameFontNormalLarge)
+    foodWaterPricesTitle:SetFullWidth(true)
+    scroll:AddChild(foodWaterPricesTitle)
+    scroll:AddChild(smallVerticalGap)
+
+    -- Create a description for the food and water prices
+    local foodWaterPricesDescription = AceGUI:Create("Label")
+    foodWaterPricesDescription:SetText("Set the prices for food and water in copper.")
+    foodWaterPricesDescription:SetFontObject(GameFontHighlightSmall)
+    foodWaterPricesDescription:SetFullWidth(true)
+    scroll:AddChild(foodWaterPricesDescription)
+    scroll:AddChild(largeVerticalGap)
+
+    -- Add price edit boxes for food and water
+    addPriceEditBoxes(foodWaterPricesGroup, "Food", Config.Settings.prices.food)
+    addPriceEditBoxes(foodWaterPricesGroup, "Water", Config.Settings.prices.water)
+
+    -- Add the group to the scroll frame
+    scroll:AddChild(foodWaterPricesGroup)
 
     scroll:AddChild(smallVerticalGap)
     scroll:AddChild(largeVerticalGap)
@@ -657,42 +762,18 @@ function UI.createOptionsPanel()
     scroll:AddChild(largeVerticalGap)
 
     -- Add label-value pairs to the scroll frame
-    local totalGoldLabel = addLabelValuePair("Total Gold Earned:", string.format("%dg %ds %dc", 0, 0, 0))
-    scroll:AddChild(totalGoldLabel)
+    UI.totalGoldLabel = addLabelValuePair("Total Gold Earned:", string.format("%dg %ds %dc", 0, 0, 0))
+    scroll:AddChild(UI.totalGoldLabel)
     scroll:AddChild(smallVerticalGap)
 
-    local dailyGoldLabel = addLabelValuePair("Gold Earned Today:", string.format("%dg %ds %dc", 0, 0, 0))
-    scroll:AddChild(dailyGoldLabel)
+    UI.dailyGoldLabel = addLabelValuePair("Gold Earned Today:", string.format("%dg %ds %dc", 0, 0, 0))
+    scroll:AddChild(UI.dailyGoldLabel)
     scroll:AddChild(smallVerticalGap)
 
-    local totalTradesLabel = addLabelValuePair("Total Trades Completed:", Config.Settings.totalTradesCompleted)
-    scroll:AddChild(totalTradesLabel)
+    UI.totalTradesLabel = addLabelValuePair("Total Trades Completed:", Config.Settings.totalTradesCompleted)
+    scroll:AddChild(UI.totalTradesLabel)
     scroll:AddChild(largeVerticalGap)
     scroll:AddChild(largeVerticalGap)
-
-    -- Function to draw gold statistics to the ticket frame
-    function UI.drawGoldStatisticsToTicketFrame()
-        -- Update the total gold label
-        totalGoldLabel.children[3]:SetText(string.format(
-            "%dg %ds %dc",
-            math.floor(Config.Settings.totalGold / 10000),
-            math.floor((Config.Settings.totalGold % 10000) / 100),
-            Config.Settings.totalGold % 100
-        ))
-
-        -- Update the daily gold label
-        dailyGoldLabel.children[3]:SetText(string.format(
-            "%dg %ds %dc",
-            math.floor(Config.Settings.dailyGold / 10000),
-            math.floor((Config.Settings.dailyGold % 10000) / 100),
-            Config.Settings.dailyGold % 100
-        ))
-
-        -- Update the total trades label
-        totalTradesLabel.children[3]:SetText(
-            Config.Settings.totalTradesCompleted
-        )
-    end
 
     -- Message Configuration Title
     local messageConfigTitle = AceGUI:Create("Label")
@@ -866,7 +947,7 @@ function UI.createOptionsPanel()
     scroll:AddChild(largeVerticalGap)
     createKeywordSection("|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, addToServiceKeywords, removeFromServiceKeywords, "Service", "Service is to be used to match the player's intended service (portal).")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, addToBanListKeywords, removeFromBanListKeywords, "Player", "The addon will scan each message and discard any message from a player in this list.")
+    createKeywordSection("|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, addToBanListKeywords, removeFromBanListKeywords, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'.")
     scroll:AddChild(largeVerticalGap)
 
     -- Save the options panel reference in the config for other modules to use

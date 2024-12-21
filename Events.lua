@@ -16,25 +16,7 @@ end
 
 -- Event handler function
 function Events.onEvent(self, event, ...)
-    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_CHANNEL" or event == "CHAT_MSG_PARTY" then
-        printEvent(event)
-
-        local message, sender = ...
-        local playerName = Utils.extractPlayerName(sender)
-
-        -- Check if addon is enabled
-        if Config.Settings.addonEnabled and message and playerName then
-            local destinationOnly = false
-
-            -- If we are running approach mode, when we are handling say/whisper messages, we should evaluate destination only for a match
-            if Config.Settings.ApproachMode and (event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_SAY") then
-                destinationOnly = true
-            end
-
-            -- Handle the invite and message logic
-            InviteTrade.handleInviteAndMessage(sender, playerName, message, destinationOnly)
-        end
-    elseif event == "VARIABLES_LOADED" then
+    if event == "VARIABLES_LOADED" then
         printEvent(event)
 
         -- Initialize saved variables
@@ -48,6 +30,35 @@ function Events.onEvent(self, event, ...)
 
         -- Create the in-game options panel for the addon
         UI.createOptionsPanel()
+
+        return
+    end
+
+    -- If the addon is disabled, don't do anything
+    if not Config.Settings.addonEnabled then
+        return
+    end
+
+    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_CHANNEL" or event == "CHAT_MSG_PARTY" then
+        printEvent(event)
+
+        local args = { ... }
+        local localizedClass, englishClass, localizedRace, englishRace, sex, name, realm = GetPlayerInfoByGUID(args[12])
+        local message, nameAndServer = args[1], args[2]
+
+        -- Check if addon is enabled
+        if message and name then
+            local destinationOnly = false
+
+            -- If we are running approach mode, when we are handling say/whisper messages, we should evaluate destination only for a match
+            if Config.Settings.ApproachMode and (event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_SAY") then
+                destinationOnly = true
+            end
+
+            -- Handle the invite and message logic
+            InviteTrade.handleInviteAndMessage(nameAndServer, name, message, destinationOnly)
+        end
+
     elseif event == "GROUP_ROSTER_UPDATE" then
         printEvent(event)
 
@@ -63,6 +74,11 @@ function Events.onEvent(self, event, ...)
                     SendChatMessage(Config.Settings.inviteMessage, "WHISPER", nil, inviteData.fullName)
                 else
                     SendChatMessage(Config.Settings.inviteMessageWithoutDestination, "WHISPER", nil, inviteData.fullName)
+                end
+
+                -- If enableFoodWaterSupport is True, send a message with food and water stock
+                if Config.Settings.enableFoodWaterSupport then
+                    InviteTrade.sendFoodAndWaterStockMessage(inviteData.name, inviteData.class)
                 end
 
                 InviteTrade.markSelfWithStar() -- Mark yourself with a star
@@ -84,6 +100,7 @@ function Events.onEvent(self, event, ...)
                 end
             end
         end
+
     elseif event == "TRADE_SHOW" then
         printEvent(event)
 

@@ -65,61 +65,57 @@ function InviteTrade.canInvitePlayer(playerName)
 end
 
 -- Function to create a pending invite entry
-function InviteTrade.createPendingInvite(playerName, sender, message, destinationKeyword)
+function InviteTrade.createPendingInvite(playerName, playerClass, sender, message, destinationKeyword)
     Events.pendingInvites[playerName] = {
         timestamp = time(),
+        class = playerClass,
+        name = playerName,
+        fullName = sender,
         destination = destinationKeyword,
         originalMessage = message,
         hasJoined = false,
         hasPaid = false,
-        travelled = false,
-        fullName = sender
+        travelled = false
     }
+
     InviteTrade.setSenderExpiryTimer(playerName)
 end
 
 -- Function to handle invite and message for common phrases
-function InviteTrade.handleCommonPhraseInvite(sender, playerName, message)
-    if InviteTrade.canInvitePlayer(playerName) then
-        InviteTrade.invitePlayer(sender)
-        local _, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
-        InviteTrade.createPendingInvite(playerName, sender, message, destinationKeyword)
-    else
-        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is still on cooldown.")
-    end
+function InviteTrade.handleCommonPhraseInvite(message)
+    local _, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
+
+    return destinationKeyword
 end
 
 -- Function to handle invites with destination keywords
-function InviteTrade.handleDestinationOnlyInvite(sender, playerName, message)
+function InviteTrade.handleDestinationOnlyInvite(message)
     local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
-    if destinationPosition and InviteTrade.canInvitePlayer(playerName) then
+
+    if destinationPosition then
         if Config.Settings.debugMode then
             print("|cff87CEEB[Thic-Portals]|r [Destination-only-invite] Matched on destination keyword: " .. destinationKeyword)
         end
-        InviteTrade.invitePlayer(sender)
-        InviteTrade.createPendingInvite(playerName, sender, message, destinationKeyword)
-    elseif destinationPosition then
-        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is still on cooldown.")
+
+        return destinationKeyword
     end
 end
 
 -- Function to handle advanced keyword detection invites
-function InviteTrade.handleAdvancedKeywordInvite(sender, playerName, message)
+function InviteTrade.handleAdvancedKeywordInvite(message)
     local intentPosition, intentKeyword = Utils.findKeywordPosition(message, Config.Settings.IntentKeywords)
     if intentPosition then
         local servicePosition, serviceKeyword = Utils.findKeywordPosition(message, Config.Settings.ServiceKeywords)
         local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
 
-        if servicePosition and servicePosition > intentPosition and InviteTrade.canInvitePlayer(playerName) then
+        if servicePosition and servicePosition > intentPosition then
             if Config.Settings.debugMode then
                 print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on intent keyword: " .. intentKeyword)
                 print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on service keyword: " .. serviceKeyword)
                 print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on destination keyword: " .. destinationKeyword)
             end
-            InviteTrade.invitePlayer(sender)
-            InviteTrade.createPendingInvite(playerName, sender, message, destinationKeyword)
-        elseif servicePosition and servicePosition > intentPosition then
-            print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is still on cooldown.")
+
+            return destinationKeyword
         end
     end
 end
@@ -138,13 +134,23 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, message, destina
         return
     end
 
-    if Utils.containsCommonPhrase(message, Config.Settings.commonPhrases) then
-        InviteTrade.handleCommonPhraseInvite(sender, playerName, message)
-    elseif destinationOnly then
-        InviteTrade.handleDestinationOnlyInvite(sender, playerName, message)
-    else
-        InviteTrade.handleAdvancedKeywordInvite(sender, playerName, message)
+    -- Here we deal with potential invite cooldowns
+    if not InviteTrade.canInvitePlayer(playerName) then
+        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is still on cooldown.")
+        return
     end
+
+    local destinationKeyword = nil
+    if Utils.containsCommonPhrase(message, Config.Settings.commonPhrases) then
+        destinationKeyword = InviteTrade.handleCommonPhraseInvite(message)
+    elseif destinationOnly then
+        destinationKeyword = InviteTrade.handleDestinationOnlyInvite(message)
+    else
+        destinationKeyword = InviteTrade.handleAdvancedKeywordInvite(message)
+    end
+
+    InviteTrade.invitePlayer(sender)
+    InviteTrade.createPendingInvite(playerName, playerClass, sender, message, destinationKeyword)
 
     -- local isFoodRequested, isWaterRequested = matchFoodAndWaterRequests(message)
 
@@ -246,6 +252,57 @@ function InviteTrade.checkTradeTip()
         return true
     else
         return false
+    end
+end
+
+-- Function to also send mana users a message with water and food stockpiles and none mana users food stock
+function InviteTrade.sendFoodAndWaterStockMessage(playerName, playerClass)
+    -- foodStock should be a string in the following format: "20 x Conjured Cinnamon Roll"
+    local foodStock = nil
+    -- waterStock should be a string in the following format: "20 x Conjured Crystal Water"
+    local waterStock = nil
+
+    -- Check if the player has rank 6 food in their inventory
+    local foodCount = GetItemCount(8076, false)
+    if foodCount > 0 then
+        foodStock = foodCount .. " x Conjured Sweet Roll " .. "(20x: " .. Utils.formatCopperValue(Config.Settings.prices.food["Conjured Sweet Roll"] * 20) .. ")"
+    end
+    -- Check if the player has rank 7 food in their inventory
+    local foodCount = GetItemCount(22895, false)
+    if foodCount > 0 then
+        foodStock = foodCount .. " x Conjured Cinnamon Roll " .. "(20x: " .. Utils.formatCopperValue(Config.Settings.prices.food["Conjured Cinnamon Roll"] * 20) .. ")"
+    end
+    -- Check if the player has rank 6 water in their inventory
+    local waterCount = GetItemCount(8077, false)
+    if waterCount > 0 then
+        waterStock = waterCount .. " x Conjured Sparkling Water " .. "(20x: " .. Utils.formatCopperValue(Config.Settings.prices.water["Conjured Sparkling Water"] * 20) .. ")"
+    end
+    -- Check if the player has rank 7 water in their inventory
+    local waterCount = GetItemCount(2136, false)
+    if waterCount > 0 then
+        waterStock = waterCount .. " x Conjured Crystal Water " .. "(20x: " .. Utils.formatCopperValue(Config.Settings.prices.water["Conjured Crystal Water"] * 20) .. ")"
+    end
+
+    -- If the player has no food or water in their inventory, we will not advertise it
+    if not foodStock and not waterStock then
+        -- Print a warning to the player that they're out of stock
+        print("|cff87CEEB[Thic-Portals]|r You have run out of food and water stock. Please restock or disable food and water support.")
+        return
+    end
+
+    local targetIsManaUser = false
+
+    -- depending on the class of the player, we will advertise water or not
+    if playerClass == "MAGE" or playerClass == "PRIEST" or playerClass == "WARLOCK" or playerClass == "DRUID" or playerClass == "SHAMAN" then
+        targetIsManaUser = true
+    end
+
+    if targetIsManaUser and (waterStock or foodStock) then
+        local message = "I have " .. waterStock .. " and " .. foodStock .. " in stock if you require it - just ask!"
+        --
+        SendChatMessage(message, "WHISPER", nil, playerName)
+    elseif foodStock then
+        SendChatMessage("I have " .. foodStock .. " in stock if you require it - just ask!", "WHISPER", nil, playerName)
     end
 end
 

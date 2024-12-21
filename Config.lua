@@ -109,6 +109,17 @@ ThicPortalSettings = {
     optionsPanelHidden = true,
     hideIcon = false,
 
+    prices = {
+        food = {
+            ["Conjured Cinnamon Roll"] = 25,
+            ["Conjured Sweet Roll"] = 25,
+        },
+        water = {
+            ["Conjured Crystal Water"] = 25,
+            ["Conjured Sparkling Water"] = 25,
+        },
+    },
+
     toggleButtonPosition = {
         point = "CENTER",
         x = 0,
@@ -180,7 +191,21 @@ function Config.initializeSavedVariables()
     Config.Settings.optionsPanelHidden = true
 
     -- Added in 2.0.3
-    Config.Settings.KeywordBanList = Config.KeywordBanList or {}
+    if not Config.Settings.KeywordBanList then
+        Config.Settings.KeywordBanList = ThicPortalSettings.KeywordBanList or {}
+    end
+    if not Config.Settings.prices then
+        Config.Settings.prices = ThicPortalSettings.prices or {
+            food = {
+                ["Conjured Cinnamon Roll"] = 2500, -- 25 silver
+                ["Conjured Sweet Roll"] = 2500, -- 25 silver
+            },
+            water = {
+                ["Conjured Crystal Water"] = 2500, -- 25 silver
+                ["Conjured Sparkling Water"] = 2500, -- 25 silver
+            },
+        }
+    end
 
     -- Remove old global variables if needed (Version 1.2.2)
     ThicPortalsSaved = nil
