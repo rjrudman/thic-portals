@@ -83,7 +83,15 @@ end
 
 -- Function to handle invite and message for common phrases
 function InviteTrade.handleCommonPhraseInvite(message)
-    local _, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.commonPhrases)
+    local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.commonPhrases)
+
+    if Config.Settings.debugMode then
+        if destinationPosition then
+            print("|cff87CEEB[Thic-Portals]|r [Common-phrase-invite] Matched on common phrase: " .. destinationKeyword)
+        else
+            print("|cff87CEEB[Thic-Portals]|r [Common-phrase-invite] Failed to match via common phrase")
+        end
+    end
 
     return destinationKeyword
 end
@@ -92,30 +100,48 @@ end
 function InviteTrade.handleDestinationOnlyInvite(message)
     local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
 
-    if destinationPosition then
-        if Config.Settings.debugMode then
+    if Config.Settings.debugMode then
+        if destinationPosition then
             print("|cff87CEEB[Thic-Portals]|r [Destination-only-invite] Matched on destination keyword: " .. destinationKeyword)
+        else
+            print("|cff87CEEB[Thic-Portals]|r [Destination-only-invite] Failed to match via destination keyword")
         end
-
-        return destinationKeyword
     end
+
+    return destinationKeyword
 end
 
 -- Function to handle advanced keyword detection invites
 function InviteTrade.handleAdvancedKeywordInvite(message)
     local intentPosition, intentKeyword = Utils.findKeywordPosition(message, Config.Settings.IntentKeywords)
     if intentPosition then
+        if Config.Settings.debugMode then
+            print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on intent keyword: " .. intentKeyword .. " (position: " .. intentPosition .. ")")
+        end
+
         local servicePosition, serviceKeyword = Utils.findKeywordPosition(message, Config.Settings.ServiceKeywords)
         local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
 
         if servicePosition and servicePosition > intentPosition then
             if Config.Settings.debugMode then
-                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on intent keyword: " .. intentKeyword)
-                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on service keyword: " .. serviceKeyword)
-                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on destination keyword: " .. destinationKeyword)
+                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on service keyword: " .. serviceKeyword .. " (position: " .. servicePosition .. ")")
+
+                if destinationPosition then
+                    print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on destination keyword: " .. destinationKeyword .. " (position: " .. destinationPosition .. ")")
+                else
+                    print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Failed to match via advanced keyword matching - no destination keyword found.")
+                end
             end
 
             return destinationKeyword
+        else
+            if Config.Settings.debugMode then
+                print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Failed to match via advanced keyword matching - no service keyword found.")
+            end
+        end
+    else
+        if Config.Settings.debugMode then
+            print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Failed to match via advanced keyword matching - no intent keyword found.")
         end
     end
 end
@@ -129,7 +155,7 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, playerClass, mes
     end
 
     -- Here we deal with the keyword ban list
-    if Utils.containsCommonPhrase(message, Config.Settings.KeywordBanList) then
+    if Utils.messageContainsKeyword(message, Config.Settings.KeywordBanList) then
         print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " used a banned keyword. No invite sent.")
         return
     end
@@ -140,10 +166,9 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, playerClass, mes
         return
     end
 
-    local destinationKeyword = nil
-    if Utils.containsCommonPhrase(message, Config.Settings.commonPhrases) then
-        destinationKeyword = InviteTrade.handleCommonPhraseInvite(message)
-    elseif not Config.Settings.disableSmartMatching then
+    local destinationKeyword = InviteTrade.handleCommonPhraseInvite(message)
+
+    if not Config.Settings.disableSmartMatching and not destinationKeyword then
         if destinationOnly then
             destinationKeyword = InviteTrade.handleDestinationOnlyInvite(message)
         else

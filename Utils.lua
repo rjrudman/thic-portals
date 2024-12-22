@@ -10,7 +10,7 @@ function Utils.calculateDistance(playerX, playerY, targetX, targetY)
 end
 
 -- Function to check if a message contains any common phrase from a list
-function Utils.containsCommonPhrase(message, commonPhrases)
+function Utils.messageContainsKeyword(message, commonPhrases)
     message = message:lower()
     for _, phrase in ipairs(commonPhrases) do
         if string.find(message, phrase) then
