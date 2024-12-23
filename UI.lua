@@ -610,6 +610,137 @@ function UI.drawGoldStatisticsToTicketFrame()
     end
 end
 
+-- Function to create keyword management section
+local function createKeywordSection(scroll, titleText, keywordTable, keywordTableType, description)
+    local userListGroup = AceGUI:Create("InlineGroup")
+    local userListContent = AceGUI:Create("SimpleGroup")
+    local keywordsText = AceGUI:Create("Label")
+
+    local function updateKeywordsText()
+        local text = ""
+        for _, keyword in ipairs(keywordTable) do
+            text = text .. keyword .. "\n"
+        end
+        keywordsText:SetText(text)
+
+        -- Ensure the layout is updated when content changes
+        userListContent:DoLayout()
+        userListGroup:DoLayout()
+        scroll:DoLayout()
+    end
+
+    -- Add to Keywords Function
+    local function addFunc(keyword)
+        if keyword and keyword:trim() ~= "" then
+            -- If it doesn't already exist
+            if not Utils.keywordInTable(keyword, keywordTable) then
+                table.insert(keywordTable, keyword)
+                updateKeywordsText()
+                print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been added.")
+            else -- If it already exists
+                print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " is already in the list.")
+            end
+        else
+            print("|cff87CEEB[Thic-Portals]|r Cannot add an empty or invalid keyword.")
+        end
+    end
+
+    -- Remove from Keywords Function
+    local function removeFunc(keyword)
+        if keyword and keyword:trim() ~= "" then
+            for i, k in ipairs(keywordTable) do
+                if k == keyword then
+                    table.remove(keywordTable, i)
+                    updateKeywordsText()
+                    print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been removed.")
+                    break
+                end
+            end
+        else
+            print("|cff87CEEB[Thic-Portals]|r Cannot remove an empty or invalid keyword.")
+        end
+    end
+
+    -- Create and add the title label
+    local sectionTitle = AceGUI:Create("Label")
+    sectionTitle:SetText(titleText)
+    sectionTitle:SetFontObject(GameFontNormalLarge)
+    sectionTitle:SetFullWidth(true)
+    scroll:AddChild(sectionTitle)
+
+    -- Add optional description if provided
+    if description then
+        local sectionDescription = AceGUI:Create("Label")
+        sectionDescription:SetText(description)
+        sectionDescription:SetFontObject(GameFontHighlightSmall)
+        sectionDescription:SetFullWidth(true)
+        scroll:AddChild(sectionDescription)
+    end
+
+    -- Create an InlineGroup for keyword management
+    local keywordGroup = AceGUI:Create("InlineGroup")
+    keywordGroup:SetFullWidth(true)
+    keywordGroup:SetLayout("Flow")
+    scroll:AddChild(keywordGroup)
+
+    -- Add/Remove Keyword MultiLineEditBox
+    local editBox = AceGUI:Create("EditBox")
+    editBox:SetLabel("Add/Remove " .. (keywordTableType or "Keyword")) -- Use the passed keywordTableType or default to "Keyword"
+    editBox:SetWidth(200)
+    editBox:DisableButton(true)
+    editBox:SetCallback("OnEnterPressed", function(widget, event, text)
+        if text ~= "" then
+            addFunc(text)
+            widget:SetText("")
+        end
+    end)
+    keywordGroup:AddChild(editBox)
+
+    -- Add Button
+    local addButton = AceGUI:Create("Button")
+    addButton:SetText("Add")
+    addButton:SetWidth(100)
+    addButton:SetCallback("OnClick", function()
+        local keyword = editBox:GetText()
+        if keyword ~= "" then
+            addFunc(keyword)
+            editBox:SetText("")
+        end
+    end)
+    keywordGroup:AddChild(addButton)
+
+    -- Remove Button
+    local removeButton = AceGUI:Create("Button")
+    removeButton:SetText("Remove")
+    removeButton:SetWidth(100)
+    removeButton:SetCallback("OnClick", function()
+        local keyword = editBox:GetText()
+        if keyword ~= "" then
+            removeFunc(keyword)
+            editBox:SetText("")
+        end
+    end)
+    keywordGroup:AddChild(removeButton)
+
+    -- Internal panel for user list with padding
+    userListGroup:SetFullWidth(true)
+    userListGroup:SetLayout("Flow")
+    userListGroup:SetAutoAdjustHeight(true)
+    keywordGroup:AddChild(userListGroup)
+
+    -- Add padding to the internal panel
+    userListContent:SetFullWidth(true)
+    userListContent:SetLayout("List")
+    userListContent:SetAutoAdjustHeight(true) -- Adjust height automatically
+    userListGroup:AddChild(userListContent)
+
+    -- Keywords Text Label
+    keywordsText:SetFullWidth(true)
+    userListContent:AddChild(keywordsText)
+
+    updateKeywordsText()
+end
+
 -- Function to create the options panel
 function UI.createOptionsPanel()
     optionsPanel = AceGUI:Create("Frame")
@@ -833,135 +964,18 @@ function UI.createOptionsPanel()
     messageConfigGroup:AddChild(noTipMessageGroup)
     messageConfigGroup:AddChild(largeVerticalGap)
 
-    -- Function to create keyword management section
-    local function createKeywordSection(titleText, keywords, entityLabel, description)
-        -- Add to Keywords Function
-        function addFunc(keyword)
-            table.insert(keywords, keyword)
-            updateKeywordsText()
-            print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been added.")
-        end
-
-        -- Remove from Keywords Function
-        function removeFunc(keyword)
-            for i, k in ipairs(keywords) do
-                if k == keyword then
-                    table.remove(keywords, i)
-                    updateKeywordsText()
-                    print("|cff87CEEB[Thic-Portals]|r " .. keyword .. " has been removed.")
-                    break
-                end
-            end
-        end
-
-        -- Create and add the title label
-        local sectionTitle = AceGUI:Create("Label")
-        sectionTitle:SetText(titleText)
-        sectionTitle:SetFontObject(GameFontNormalLarge)
-        sectionTitle:SetFullWidth(true)
-        scroll:AddChild(sectionTitle)
-
-        -- Add optional description if provided
-        if description then
-            local sectionDescription = AceGUI:Create("Label")
-            sectionDescription:SetText(description)
-            sectionDescription:SetFontObject(GameFontHighlightSmall)
-            sectionDescription:SetFullWidth(true)
-            scroll:AddChild(sectionDescription)
-        end
-
-        -- Create an InlineGroup for keyword management
-        local keywordGroup = AceGUI:Create("InlineGroup")
-        keywordGroup:SetFullWidth(true)
-        keywordGroup:SetLayout("Flow")
-        scroll:AddChild(keywordGroup)
-
-        -- Add/Remove Keyword MultiLineEditBox
-        local editBox = AceGUI:Create("EditBox")
-        editBox:SetLabel("Add/Remove " .. (entityLabel or "Keyword")) -- Use the passed entityLabel or default to "Keyword"
-        editBox:SetWidth(200)
-        editBox:DisableButton(true)
-        editBox:SetCallback("OnEnterPressed", function(widget, event, text)
-            if text ~= "" then
-                addFunc(text)
-                widget:SetText("")
-            end
-        end)
-        keywordGroup:AddChild(editBox)
-
-        -- Add Button
-        local addButton = AceGUI:Create("Button")
-        addButton:SetText("Add")
-        addButton:SetWidth(100)
-        addButton:SetCallback("OnClick", function()
-            local keyword = editBox:GetText()
-            if keyword ~= "" then
-                addFunc(keyword)
-                editBox:SetText("")
-            end
-        end)
-        keywordGroup:AddChild(addButton)
-
-        -- Remove Button
-        local removeButton = AceGUI:Create("Button")
-        removeButton:SetText("Remove")
-        removeButton:SetWidth(100)
-        removeButton:SetCallback("OnClick", function()
-            local keyword = editBox:GetText()
-            if keyword ~= "" then
-                removeFunc(keyword)
-                editBox:SetText("")
-            end
-        end)
-        keywordGroup:AddChild(removeButton)
-
-        -- Internal panel for user list with padding
-        local userListGroup = AceGUI:Create("InlineGroup")
-        userListGroup:SetFullWidth(true)
-        userListGroup:SetLayout("Flow")
-        userListGroup:SetAutoAdjustHeight(true)
-        keywordGroup:AddChild(userListGroup)
-
-        -- Add padding to the internal panel
-        local userListContent = AceGUI:Create("SimpleGroup")
-        userListContent:SetFullWidth(true)
-        userListContent:SetLayout("List")
-        userListContent:SetAutoAdjustHeight(true) -- Adjust height automatically
-        userListGroup:AddChild(userListContent)
-
-        -- Keywords Text Label
-        local keywordsText = AceGUI:Create("Label")
-        keywordsText:SetFullWidth(true)
-        userListContent:AddChild(keywordsText)
-
-        local function updateKeywordsText()
-            local text = ""
-            for _, keyword in ipairs(keywords) do
-                text = text .. keyword .. "\n"
-            end
-            keywordsText:SetText(text)
-
-            -- Ensure the layout is updated when content changes
-            userListContent:DoLayout()
-            userListGroup:DoLayout()
-            scroll:DoLayout()
-        end
-
-        updateKeywordsText()
-    end
-
     -- Creating Keyword Sections
-    createKeywordSection("|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, "Keyword", "If the addon matches one of these keywords in any evaluated message, it will discard it.")
+    createKeywordSection(scroll, "|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, "Keyword", "If the addon matches one of these keywords in any evaluated message, it will discard it.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Common Phrases Management|r", Config.Settings.commonPhrases, "Common Phrase", "Common Phrases are the first compared list of terms before any other keyword matching occurs. The only way to send an automated invite in this scenario is to match one of the below phrases exactly.")
+    createKeywordSection(scroll, "|cFFFFD700Common Phrases Management|r", Config.Settings.commonPhrases, "Common Phrase", "Common Phrases are the first compared list of terms before any other keyword matching occurs. The only way to send an automated invite in this scenario is to match one of the below phrases exactly.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, "Intent", "Intent is to be used to match the player's intent to trade or request a service.")
+    createKeywordSection(scroll, "|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, "Intent", "Intent is to be used to match the player's intent to trade or request a service.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, "Destination", "Destination is to be used to match the player's intended destination.")
+    createKeywordSection(scroll, "|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, "Destination", "Destination is to be used to match the player's intended destination.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, "Service", "Service is to be used to match the player's intended service (portal).")
+    createKeywordSection(scroll, "|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, "Service", "Service is to be used to match the player's intended service (portal).")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection("|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'.")
+    createKeywordSection(scroll, "|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'.")
     scroll:AddChild(largeVerticalGap)
 
     -- Save the options panel reference in the config for other modules to use

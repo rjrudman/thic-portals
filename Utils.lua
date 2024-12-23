@@ -9,11 +9,22 @@ function Utils.calculateDistance(playerX, playerY, targetX, targetY)
     return math.sqrt((playerX - targetX)^2 + (playerY - targetY)^2)
 end
 
+-- Function to check if a value equals another value in a table
+function Utils.keywordInTable(keyword, keywordList)
+    keyword = keyword:lower()
+    for _, phrase in ipairs(keywordList) do
+        if keyword == phrase:lower() then
+            return true
+        end
+    end
+    return false
+end
+
 -- Function to check if a message contains any common phrase from a list
-function Utils.messageContainsKeyword(message, commonPhrases)
+function Utils.messageContainsKeyword(message, keywordList)
     message = message:lower()
-    for _, phrase in ipairs(commonPhrases) do
-        if string.find(message, phrase) then
+    for _, phrase in ipairs(keywordList) do
+        if string.find(message, phrase:lower()) then
             return true
         end
     end
@@ -24,7 +35,7 @@ end
 function Utils.findKeywordPosition(message, keywordList)
     message = " " .. message:lower() .. " " -- Add spaces around the message to match keywords at the start and end
     for _, keyword in ipairs(keywordList) do
-        local pattern = "%f[%w]" .. keyword .. "%f[%W]"
+        local pattern = "%f[%w]" .. keyword:lower() .. "%f[%W]"
         local position = string.find(message, pattern)
         if position then
             return position, keyword
