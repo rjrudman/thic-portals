@@ -43,6 +43,8 @@ function Events.onEvent(self, event, ...)
         printEvent(event)
 
         local args = { ... }
+
+        if args[12] then
         local localizedClass, englishClass, localizedRace, englishRace, sex, name, realm = GetPlayerInfoByGUID(args[12])
         local message, nameAndServer = args[1], args[2]
 
@@ -57,6 +59,7 @@ function Events.onEvent(self, event, ...)
 
             -- Handle the invite and message logic
             InviteTrade.handleInviteAndMessage(nameAndServer, name, englishClass, message, destinationOnly)
+            end
         end
 
     elseif event == "GROUP_ROSTER_UPDATE" then
