@@ -52,6 +52,11 @@ end
 
 -- Function to handle sending an invite to a player
 function InviteTrade.invitePlayer(sender)
+    if Config.Settings.removeRealmFromInviteCommand then
+        -- sender = Thicfury-Ashbringer for example, we want to remove the realm part
+        sender = string.match(sender, "([^%-]+)")
+    end
+
     InviteUnit(sender)
 
     playMatchSound()

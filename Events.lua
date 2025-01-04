@@ -45,20 +45,20 @@ function Events.onEvent(self, event, ...)
         local args = { ... }
 
         if args[12] then
-        local localizedClass, englishClass, localizedRace, englishRace, sex, name, realm = GetPlayerInfoByGUID(args[12])
-        local message, nameAndServer = args[1], args[2]
+            local localizedClass, englishClass, localizedRace, englishRace, sex, name, realm = GetPlayerInfoByGUID(args[12])
+            local message, nameAndServer = args[1], args[2]
 
-        -- Check if addon is enabled
-        if message and name then
-            local destinationOnly = false
+            -- Check if addon is enabled
+            if message and name then
+                local destinationOnly = false
 
-            -- If we are running approach mode, when we are handling say/whisper messages, we should evaluate destination only for a match
-            if Config.Settings.ApproachMode and (event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_SAY") then
-                destinationOnly = true
-            end
+                -- If we are running approach mode, when we are handling say/whisper messages, we should evaluate destination only for a match
+                if Config.Settings.ApproachMode and (event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_SAY") then
+                    destinationOnly = true
+                end
 
-            -- Handle the invite and message logic
-            InviteTrade.handleInviteAndMessage(nameAndServer, name, englishClass, message, destinationOnly)
+                -- Handle the invite and message logic
+                InviteTrade.handleInviteAndMessage(nameAndServer, name, englishClass, message, destinationOnly)
             end
         end
 

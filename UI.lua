@@ -23,6 +23,7 @@ UI.hideIconCheckbox = AceGUI:Create("CheckBox")
 UI.approachModeCheckbox = AceGUI:Create("CheckBox");
 UI.enableFoodWaterSupportCheckbox = AceGUI:Create("CheckBox");
 UI.disableSmartMatchingCheckbox = AceGUI:Create("CheckBox");
+UI.removeRealmFromInviteCommandCheckbox = AceGUI:Create("CheckBox");
 UI.addonEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.soundEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.debugModeCheckbox = AceGUI:Create("CheckBox");
@@ -861,6 +862,16 @@ function UI.createOptionsPanel()
         end
     end)
 
+    -- Don't use realm when inviting
+    addCheckbox(checkboxGroup, "Remove realm keyword from invite command", UI.removeRealmFromInviteCommandCheckbox, Config.Settings.removeRealmFromInviteCommand, function(_, _, value)
+        Config.Settings.removeRealmFromInviteCommand = value
+        if Config.Settings.removeRealmFromInviteCommand then
+            print("|cff87CEEB[Thic-Portals]|r Smart matching disabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Smart matching enabled.")
+        end
+    end)
+
     -- Create a label for the food and water prices
     scroll:AddChild(checkboxGroup)
     scroll:AddChild(largeVerticalGap)
@@ -967,13 +978,13 @@ function UI.createOptionsPanel()
     -- Creating Keyword Sections
     createKeywordSection(scroll, "|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, "Keyword", "If the addon matches one of these keywords in any evaluated message, it will discard it.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Common Phrases Management|r", Config.Settings.commonPhrases, "Common Phrase", "Common Phrases are the first compared list of terms before any other keyword matching occurs. The only way to send an automated invite in this scenario is to match one of the below phrases exactly.")
+    createKeywordSection(scroll, "|cFFFFD700Common Phrases Management|r", Config.Settings.commonPhrases, "Common Phrase", "Common Phrases are the first compared list of terms before any other keyword matching occurs. The only way to send an automated invite in this scenario is to match one of the below phrases exactly. The phrase can exist as part of the entire message!")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, "Intent", "Intent is to be used to match the player's intent to trade or request a service.")
+    createKeywordSection(scroll, "|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, "Intent", "Intent is used to match the player's intent to trade or request a service (e.g. wtb, need).")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, "Destination", "Destination is to be used to match the player's intended destination.")
+    createKeywordSection(scroll, "|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, "Destination", "Destination is used to match the player's intended destination (e.g. darna, if).")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, "Service", "Service is to be used to match the player's intended service (portal).")
+    createKeywordSection(scroll, "|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, "Service", "Service is used to match the player's intended service (e.g. portal, tp).")
     scroll:AddChild(largeVerticalGap)
     createKeywordSection(scroll, "|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'.")
     scroll:AddChild(largeVerticalGap)
