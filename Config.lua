@@ -102,6 +102,7 @@ ThicPortalSettings = {
     leaveWithoutPaymentThreshold = 2,
 
     addonEnabled = false,
+    disableGlobalChannels = false,
     soundEnabled = true,
     debugMode = false,
     approachMode = false,
@@ -110,6 +111,7 @@ ThicPortalSettings = {
     removeRealmFromInviteCommand = false,
     optionsPanelHidden = true,
     hideIcon = false,
+    disableAFKProtection = false,
 
     prices = {
         food = {
@@ -183,6 +185,12 @@ function Config.initializeSavedVariables()
     end
     if not Config.Settings.removeRealmFromInviteCommand then
         Config.Settings.removeRealmFromInviteCommand = ThicPortalSettings.removeRealmFromInviteCommand
+    end
+    if not Config.Settings.disableGlobalChannels then
+        Config.Settings.disableGlobalChannels = ThicPortalSettings.disableGlobalChannels
+    end
+    if not Config.Settings.disableAFKProtection then
+        Config.Settings.disableAFKProtection = ThicPortalSettings.disableAFKProtection
     end
     if not Config.Settings.FoodKeywords then
         Config.Settings.FoodKeywords = ThicPortalSettings.FoodKeywords

@@ -25,6 +25,8 @@ UI.enableFoodWaterSupportCheckbox = AceGUI:Create("CheckBox");
 UI.disableSmartMatchingCheckbox = AceGUI:Create("CheckBox");
 UI.removeRealmFromInviteCommandCheckbox = AceGUI:Create("CheckBox");
 UI.addonEnabledCheckbox = AceGUI:Create("CheckBox");
+UI.disableGlobalChannelsCheckbox = AceGUI:Create("CheckBox");
+UI.disableAFKProtectionCheckbox = AceGUI:Create("CheckBox");
 UI.soundEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.debugModeCheckbox = AceGUI:Create("CheckBox");
 
@@ -46,7 +48,7 @@ local function toggleAddonEnabledState()
     end
 end
 
-local function addCheckbox(group, label, checkbox, initialValue, callback)
+local function addCheckbox(group, label, checkbox, initialValue, callback, tooltipText)
     -- Add spacer between checkboxes
     local spacer = AceGUI:Create("Label")
     spacer:SetWidth(30)
@@ -56,8 +58,21 @@ local function addCheckbox(group, label, checkbox, initialValue, callback)
     checkbox:SetLabel(label)
     checkbox:SetValue(initialValue)
     checkbox:SetCallback("OnValueChanged", callback)
-    checkbox:SetWidth(250)
+    checkbox:SetWidth(300)
     group:AddChild(checkbox)
+
+    -- Add tooltip functionality
+    if tooltipText then
+        checkbox:SetCallback("OnEnter", function()
+            GameTooltip:SetOwner(checkbox.frame, "ANCHOR_TOPRIGHT")
+            GameTooltip:SetText(tooltipText, 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+
+        checkbox:SetCallback("OnLeave", function()
+            GameTooltip:Hide()
+        end)
+    end
 
     -- Add tiny vertical gap
     local tinyVerticalGap = AceGUI:Create("Label")
@@ -798,7 +813,17 @@ function UI.createOptionsPanel()
     -- Addon On/Off Checkbox
     addCheckbox(checkboxGroup, "Enable Addon", UI.addonEnabledCheckbox, Config.Settings.addonEnabled, function(_, _, value)
         toggleAddonEnabledState()
-    end)
+    end, "Enables or disables the addon functionality entirely.")
+
+    -- Global Channels On/Off Checkbox
+    addCheckbox(checkboxGroup, "Disable Global Channels", UI.disableGlobalChannelsCheckbox, Config.Settings.disableGlobalChannels, function(_, _, value)
+        Config.Settings.disableGlobalChannels = value
+        if Config.Settings.disableGlobalChannels then
+            print("|cff87CEEB[Thic-Portals]|r Global channels disabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Global channels enabled.")
+        end
+    end, "Enables or disables the addon from listening to global channels for requests.")
 
     -- Sound On/Off Checkbox
     addCheckbox(checkboxGroup, "Enable Sound", UI.soundEnabledCheckbox, Config.Settings.soundEnabled, function(_, _, value)
@@ -808,7 +833,7 @@ function UI.createOptionsPanel()
         else
             print("|cff87CEEB[Thic-Portals]|r Sound disabled.")
         end
-    end)
+    end, "Enables or disables sound notifications.")
 
     -- Debug Mode Checkbox
     addCheckbox(checkboxGroup, "Enable Debug Mode", UI.debugModeCheckbox, Config.Settings.debugMode, function(_, _, value)
@@ -818,7 +843,7 @@ function UI.createOptionsPanel()
         else
             print("|cff87CEEB[Thic-Portals]|r Debug mode disabled.")
         end
-    end)
+    end, "Toggles debug mode for additional console logging.")
 
     -- Hide Icon Checkbox
     addCheckbox(checkboxGroup, "Hide Icon", UI.hideIconCheckbox, Config.Settings.hideIcon, function(_, _, value)
@@ -830,7 +855,7 @@ function UI.createOptionsPanel()
             print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked hidden.")
             toggleButton:Show()
         end
-    end)
+    end, "Hides or shows the toggle button on the screen. You can use '/Tp show' to reveal the hidden icon again.")
 
     -- Approach Mode Checkbox
     addCheckbox(checkboxGroup, "Approach Mode", UI.approachModeCheckbox, Config.Settings.ApproachMode, function(_, _, value)
@@ -840,7 +865,7 @@ function UI.createOptionsPanel()
         else
             print("|cff87CEEB[Thic-Portals]|r Approach mode disabled.")
         end
-    end)
+    end, "When enabled, the addon will require only a destination value to be provided in either a say/whisper.")
 
     -- Enable Food and Water Support Checkbox
     addCheckbox(checkboxGroup, "Food and Water Support", UI.enableFoodWaterSupportCheckbox, Config.Settings.enableFoodWaterSupport, function(_, _, value)
@@ -850,7 +875,7 @@ function UI.createOptionsPanel()
         else
             print("|cff87CEEB[Thic-Portals]|r Food and Water support disabled.")
         end
-    end)
+    end, "Enables or disables the ability to sell food and water items through the portal service. Food and water will be advertised to relevant customers depending on stock levels.")
 
     -- Disable smart matching and use only common phrase matching
     addCheckbox(checkboxGroup, "Only Use Common Phrase Matching", UI.disableSmartMatchingCheckbox, Config.Settings.disableSmartMatching, function(_, _, value)
@@ -860,17 +885,27 @@ function UI.createOptionsPanel()
         else
             print("|cff87CEEB[Thic-Portals]|r Smart matching enabled.")
         end
-    end)
+    end, "Disables advanced smart matching algorithms and only uses the predefined common phrases to match requests (configurable below).")
 
     -- Don't use realm when inviting
-    addCheckbox(checkboxGroup, "Remove realm keyword from invite command", UI.removeRealmFromInviteCommandCheckbox, Config.Settings.removeRealmFromInviteCommand, function(_, _, value)
+    addCheckbox(checkboxGroup, "Remove Realm Affix From Invite Command", UI.removeRealmFromInviteCommandCheckbox, Config.Settings.removeRealmFromInviteCommand, function(_, _, value)
         Config.Settings.removeRealmFromInviteCommand = value
         if Config.Settings.removeRealmFromInviteCommand then
             print("|cff87CEEB[Thic-Portals]|r Smart matching disabled.")
         else
             print("|cff87CEEB[Thic-Portals]|r Smart matching enabled.")
         end
-    end)
+    end, "When enabled, removes the realm name e.g. '-Ashbringer' from invite commands, making invites suitable for certain single realm servers.")
+
+    -- AFK Protection Checkbox
+    addCheckbox(checkboxGroup, "Disable AFK Protection", UI.disableAFKProtectionCheckbox, Config.Settings.disableAFKProtection, function(_, _, value)
+        Config.Settings.disableAFKProtection = value
+        if Config.Settings.disableAFKProtection then
+            print("|cff87CEEB[Thic-Portals]|r AFK protection disabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r AFK protection enabled.")
+        end
+    end, "Disables the AFK protection feature which is in place to prevent potentially over-inviting players if the user forgets the addon is running. Two players in a row leaving the party without payment triggers shop close.")
 
     -- Create a label for the food and water prices
     scroll:AddChild(checkboxGroup)

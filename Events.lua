@@ -39,7 +39,18 @@ function Events.onEvent(self, event, ...)
         return
     end
 
-    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_CHANNEL" or event == "CHAT_MSG_PARTY" then
+    local checkGlobal = false
+
+    if not Config.Settings.disableGlobalChannels and event == "CHAT_MSG_CHANNEL" then
+        checkGlobal = true
+    else
+        -- If debug mode, log
+        if Config.Settings.debugMode then
+            print("|cff87CEEB[Thic-Portals]|r Global channels disabled. Skipping global channel message.")
+        end
+    end
+
+    if event == "CHAT_MSG_SAY" or event == "CHAT_MSG_WHISPER" or event == "CHAT_MSG_YELL" or event == "CHAT_MSG_PARTY" or checkGlobal then
         printEvent(event)
 
         local args = { ... }
@@ -97,7 +108,7 @@ function Events.onEvent(self, event, ...)
                     print("|cff87CEEB[Thic-Portals]|r " .. sender .. " has left the party and has been removed from tracking.")
                 end
 
-                if not inviteData.hasPaid then
+                if not inviteData.hasPaid and not Config.Settings.disableAFKProtection then
                     -- Increment the counter for leaving without payment
                     Events.handleConsecutiveLeavesWithoutPayment()
                 end
