@@ -30,6 +30,7 @@ function Events.onEvent(self, event, ...)
 
         -- Create the in-game options panel for the addon
         UI.createOptionsPanel()
+        UI.hideOptionsPanel()
 
         return
     end
