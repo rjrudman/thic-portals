@@ -168,11 +168,24 @@ local function addMessageMultiLineEditBox(labelText, messageVar, callback)
     editBox:SetFullWidth(true)
     editBox:SetNumLines(3)
     editBox:SetLabel(labelText)
+
+    -- Callback for when the text changes
+    editBox:SetCallback("OnTextChanged", function(widget, _, text)
+        if #text > 255 then
+            -- Truncate the text to 255 characters
+            widget:SetText(string.sub(text, 1, 255))
+        end
+    end)
+
+    -- Callback for when Enter is pressed
     editBox:SetCallback("OnEnterPressed", function(_, _, text)
+        if #text > 255 then
+            text = string.sub(text, 1, 255) -- Ensure no overflow
+        end
         callback(text)
     end)
-    editBoxGroup:AddChild(editBox)
 
+    editBoxGroup:AddChild(editBox)
     group:AddChild(editBoxGroup)
 
     return group

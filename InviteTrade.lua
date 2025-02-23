@@ -155,13 +155,18 @@ end
 function InviteTrade.handleInviteAndMessage(sender, playerName, playerClass, message, destinationOnly)
     -- Here we deal with the player ban list
     if Utils.isPlayerBanned(sender) then
-        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is on the ban list. No invite sent.")
+        if Config.Settings.debugMode then
+            print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is on the ban list. No invite sent.")
+        end
         return
     end
 
     -- Here we deal with the keyword ban list
     if Utils.messageContainsKeyword(message, Config.Settings.KeywordBanList) then
-        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " used a banned keyword. No invite sent.")
+        -- If debug mode
+        if Config.Settings.debugMode then
+            print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " used a banned keyword. No invite sent.")
+        end
         return
     end
 
