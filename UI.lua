@@ -30,24 +30,6 @@ UI.disableAFKProtectionCheckbox = AceGUI:Create("CheckBox");
 UI.soundEnabledCheckbox = AceGUI:Create("CheckBox");
 UI.debugModeCheckbox = AceGUI:Create("CheckBox");
 
--- Function to update the button text and color of the interface configuration options
-local function toggleAddonEnabledState()
-    Config.Settings.addonEnabled = not Config.Settings.addonEnabled -- Toggle the state
-
-    if Config.Settings.addonEnabled then
-        toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsopen.tga") -- Replace with the path to your image
-        UI.addonEnabledCheckbox:SetValue(true)
-        print("|cff87CEEB[Thic-Portals]|r The portal shop is open!")
-    else
-        toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
-        UI.addonEnabledCheckbox:SetValue(false)
-        print("|cff87CEEB[Thic-Portals]|r You closed the shop.")
-
-        -- Clear any tracked players and their data
-        Events.pendingInvites = {}
-    end
-end
-
 local function addCheckbox(group, label, checkbox, initialValue, callback, tooltipText)
     -- Add spacer between checkboxes
     local spacer = AceGUI:Create("Label")
@@ -200,6 +182,24 @@ local function setMinWidth(frame, minWidth)
     end)
 end
 
+-- Function to update the button text and color of the interface configuration options
+function UI.toggleAddonEnabledState()
+    Config.Settings.addonEnabled = not Config.Settings.addonEnabled -- Toggle the state
+
+    if Config.Settings.addonEnabled then
+        toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsopen.tga") -- Replace with the path to your image
+        UI.addonEnabledCheckbox:SetValue(true)
+        print("|cff87CEEB[Thic-Portals]|r The portal shop is open!")
+    else
+        toggleButtonOverlayTexture:SetTexture("Interface\\AddOns\\ThicPortals\\Media\\Logo\\thicportalsclosed.tga") -- Replace with the path to your image
+        UI.addonEnabledCheckbox:SetValue(false)
+        print("|cff87CEEB[Thic-Portals]|r You closed the shop.")
+
+        -- Clear any tracked players and their data
+        Events.pendingInvites = {}
+    end
+end
+
 -- Function to create the toggle button
 function UI.createToggleButton()
     toggleButton = CreateFrame("Button", "ToggleButton", UIParent, "UIPanelButtonTemplate")
@@ -233,7 +233,7 @@ function UI.createToggleButton()
     -- Script to handle button clicks
     toggleButton:SetScript("OnMouseUp", function(self, button)
         if button == "LeftButton" then
-            toggleAddonEnabledState() -- Update the button text
+            UI.toggleAddonEnabledState() -- Update the button text
         elseif button == "RightButton" then
             -- If debug mode log the current options panel state
             if Config.Settings.debugMode then
@@ -825,7 +825,7 @@ function UI.createOptionsPanel()
 
     -- Addon On/Off Checkbox
     addCheckbox(checkboxGroup, "Enable Addon", UI.addonEnabledCheckbox, Config.Settings.addonEnabled, function(_, _, value)
-        toggleAddonEnabledState()
+        UI.toggleAddonEnabledState()
     end, "Enables or disables the addon functionality entirely.")
 
     -- Global Channels On/Off Checkbox

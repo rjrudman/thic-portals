@@ -14,6 +14,19 @@ local function printEvent(event)
     end
 end
 
+-- Function to handle consecutive leaves without payment
+local function handleConsecutiveLeavesWithoutPayment()
+    Config.Settings.consecutiveLeavesWithoutPayment = Config.Settings.consecutiveLeavesWithoutPayment + 1
+    print("|cff87CEEB[Thic-Portals]|r Consecutive players who have left the party without payment: " .. Config.Settings.consecutiveLeavesWithoutPayment)
+
+    if Config.Settings.consecutiveLeavesWithoutPayment >= Config.Settings.leaveWithoutPaymentThreshold then
+        print("|cff87CEEB[Thic-Portals]|r Two people in a row left without payment - you are likely AFK. Shutting down the addon.")
+        if Config.Settings.addonEnabled then
+            UI.toggleAddonEnabledState()
+        end
+    end
+end
+
 -- Event handler function
 function Events.onEvent(self, event, ...)
     if event == "VARIABLES_LOADED" then
@@ -111,7 +124,7 @@ function Events.onEvent(self, event, ...)
 
                 if not inviteData.hasPaid and not Config.Settings.disableAFKProtection then
                     -- Increment the counter for leaving without payment
-                    Events.handleConsecutiveLeavesWithoutPayment()
+                    handleConsecutiveLeavesWithoutPayment()
                 end
             end
         end
@@ -168,20 +181,6 @@ function Events.onEvent(self, event, ...)
         local type, msg = ...
         if (msg == ERR_TRADE_COMPLETE) then
             Events.handleTradeComplete()
-        end
-    end
-end
-
--- Function to handle consecutive leaves without payment
-function Events.handleConsecutiveLeavesWithoutPayment()
-    Config.Settings.consecutiveLeavesWithoutPayment = Config.Settings.consecutiveLeavesWithoutPayment + 1
-    print("|cff87CEEB[Thic-Portals]|r Consecutive players who have left the party without payment: " .. Config.Settings.consecutiveLeavesWithoutPayment)
-
-    if Config.Settings.consecutiveLeavesWithoutPayment >= Config.Settings.leaveWithoutPaymentThreshold then
-        Config.Settings.addonEnabled = false
-        print("|cff87CEEB[Thic-Portals]|r Three people in a row left without payment - you are likely AFK. Shutting down the addon.")
-        if UI.addonEnabledCheckbox then
-            UI.addonEnabledCheckbox:SetValue(false)
         end
     end
 end
