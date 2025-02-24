@@ -32,11 +32,18 @@ local function matchFoodAndWaterRequests(message)
     return isFoodRequested, isWaterRequested
 end
 
+-- Function to check if a player can be invited (based on cooldown)
+local function stillOnCooldown(playerName)
+    -- If the player is in the pending invites table and has not joined and the cooldown hasn't expired
+    return Events.pendingInvites[playerName] and not Events.pendingInvites[playerName].hasJoined and (time() - Events.pendingInvites[playerName].timestamp) < Config.Settings.inviteCooldown
+end
+
 -- Function to update the destination of a pending invite
 local function updatePendingInviteDestination(playerName, message)
     local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
     if destinationPosition and Events.pendingInvites[playerName] then
         Events.pendingInvites[playerName].destination = destinationKeyword
+
         if Events.pendingInvites[playerName].destinationValue then
             Events.pendingInvites[playerName].destinationValue:SetText(destinationKeyword)
         end
@@ -64,11 +71,6 @@ function InviteTrade.invitePlayer(sender)
     print("|cff87CEEB[Thic-Portals]|r Invited " .. sender .. " to the group.")
 end
 
--- Function to check if a player can be invited (based on cooldown)
-function InviteTrade.canInvitePlayer(playerName)
-    return not Events.pendingInvites[playerName] or time() - Events.pendingInvites[playerName].timestamp >= Config.Settings.inviteCooldown
-end
-
 -- Function to create a pending invite entry
 function InviteTrade.createPendingInvite(playerName, playerClass, sender, message, destinationKeyword)
     Events.pendingInvites[playerName] = {
@@ -88,17 +90,19 @@ end
 
 -- Function to handle invite and message for common phrases
 function InviteTrade.handleCommonPhraseInvite(message)
-    local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.commonPhrases)
+    local phrase = Utils.messageHasPhraseOrKeyword(message, Config.Settings.commonPhrases)
+    local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
 
     if Config.Settings.debugMode then
-        if destinationPosition then
-            print("|cff87CEEB[Thic-Portals]|r [Common-phrase-invite] Matched on common phrase: " .. destinationKeyword)
+        if phrase then
+            print("|cff87CEEB[Thic-Portals]|r [Common-phrase-invite] Matched on common phrase: " .. phrase)
+            print("|cff87CEEB[Thic-Portals]|r [Common-phrase-invite] Destination keyword: " .. (destinationKeyword or "none"))
         else
             print("|cff87CEEB[Thic-Portals]|r [Common-phrase-invite] Failed to match via common phrase")
         end
     end
 
-    return destinationKeyword
+    return phrase, destinationKeyword
 end
 
 -- Function to handle invites with destination keywords
@@ -113,11 +117,16 @@ function InviteTrade.handleDestinationOnlyInvite(message)
         end
     end
 
-    return destinationKeyword
+    local matched = destinationPosition and true or false
+
+    return matched, destinationKeyword
 end
 
 -- Function to handle advanced keyword detection invites
 function InviteTrade.handleAdvancedKeywordInvite(message)
+    local matched = false
+    local destinationKeyword = nil
+
     local intentPosition, intentKeyword = Utils.findKeywordPosition(message, Config.Settings.IntentKeywords)
     if intentPosition then
         if Config.Settings.debugMode then
@@ -125,20 +134,21 @@ function InviteTrade.handleAdvancedKeywordInvite(message)
         end
 
         local servicePosition, serviceKeyword = Utils.findKeywordPosition(message, Config.Settings.ServiceKeywords)
-        local destinationPosition, destinationKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
+        local destinationPosition, destKeyword = Utils.findKeywordPosition(message, Config.Settings.DestinationKeywords)
 
         if servicePosition and servicePosition > intentPosition then
+            matched = true
+            destinationKeyword = destKeyword
+
             if Config.Settings.debugMode then
                 print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on service keyword: " .. serviceKeyword .. " (position: " .. servicePosition .. ")")
 
                 if destinationPosition then
-                    print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on destination keyword: " .. destinationKeyword .. " (position: " .. destinationPosition .. ")")
+                    print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Matched on destination keyword: " .. destKeyword .. " (position: " .. destinationPosition .. ")")
                 else
                     print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Failed to match via advanced keyword matching - no destination keyword found.")
                 end
             end
-
-            return destinationKeyword
         else
             if Config.Settings.debugMode then
                 print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Failed to match via advanced keyword matching - no service keyword found.")
@@ -149,6 +159,8 @@ function InviteTrade.handleAdvancedKeywordInvite(message)
             print("|cff87CEEB[Thic-Portals]|r [Advanced-keyword-invite] Failed to match via advanced keyword matching - no intent keyword found.")
         end
     end
+
+    return matched, destinationKeyword
 end
 
 -- Main function to handle invites and messages
@@ -162,7 +174,7 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, playerClass, mes
     end
 
     -- Here we deal with the keyword ban list
-    if Utils.messageContainsKeyword(message, Config.Settings.KeywordBanList) then
+    if Utils.messageHasPhraseOrKeyword(message, Config.Settings.KeywordBanList) then
         -- If debug mode
         if Config.Settings.debugMode then
             print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " used a banned keyword. No invite sent.")
@@ -170,32 +182,27 @@ function InviteTrade.handleInviteAndMessage(sender, playerName, playerClass, mes
         return
     end
 
-    -- Here we deal with potential invite cooldowns
-    if not InviteTrade.canInvitePlayer(playerName) then
-        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is still on cooldown.")
+    -- Here we deal with potential invite cooldowns, this should only return early if the player hasn't joined yet
+    if stillOnCooldown(playerName) then
+        print("|cff87CEEB[Thic-Portals]|r Player " .. sender .. " is still on invite cooldown.")
         return
     end
 
-    local destinationKeyword = InviteTrade.handleCommonPhraseInvite(message)
+    -- Here we do our message matching
+    local matched, destinationKeyword = InviteTrade.handleCommonPhraseInvite(message)
 
-    if not Config.Settings.disableSmartMatching and not destinationKeyword then
+    if not Config.Settings.disableSmartMatching and not matched then
         if destinationOnly then
-            destinationKeyword = InviteTrade.handleDestinationOnlyInvite(message)
+            matched, destinationKeyword = InviteTrade.handleDestinationOnlyInvite(message)
         else
-            destinationKeyword = InviteTrade.handleAdvancedKeywordInvite(message)
+            matched, destinationKeyword = InviteTrade.handleAdvancedKeywordInvite(message)
         end
     end
 
-    if destinationKeyword then
+    if matched then
         InviteTrade.invitePlayer(sender)
         InviteTrade.createPendingInvite(playerName, playerClass, sender, message, destinationKeyword)
     end
-
-    -- local isFoodRequested, isWaterRequested = matchFoodAndWaterRequests(message)
-
-    -- if isFoodRequested or isWaterRequested then
-    --     print("|cff87CEEB[Thic-Portals]|r " .. playerName .. " requested " .. (isFoodRequested and "food" or "") .. (isFoodRequested and isWaterRequested and " and " or "") .. (isWaterRequested and "water" or "") .. ".")
-    -- end
 
     -- Update pending invite destination if a destination keyword is found in the new message
     updatePendingInviteDestination(playerName, message)

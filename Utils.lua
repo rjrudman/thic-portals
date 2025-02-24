@@ -20,12 +20,29 @@ function Utils.keywordInTable(keyword, keywordList)
     return false
 end
 
--- Function to check if a message contains any common phrase from a list
-function Utils.messageContainsKeyword(message, keywordList)
-    message = message:lower()
+-- Helper function to escape Lua pattern special characters
+local function escapePattern(text)
+    return text:gsub("([^%w])", "%%%1")
+end
+
+-- Function to check if a message contains any exact keyword/phrase match.
+function Utils.messageHasPhraseOrKeyword(message, keywordList)
+    -- Pad the message with spaces at the beginning and end.
+    message = " " .. message:lower() .. " "
     for _, phrase in ipairs(keywordList) do
-        if string.find(message, phrase:lower()) then
-            return true
+        if phrase:sub(1, 1) == "%" and phrase:sub(-1) == "%" then
+            -- Contains style search: remove the leading and trailing '%' characters.
+            local substring = phrase:sub(2, -2):lower()
+            if string.find(message, substring, 1, true) then
+                return substring
+            end
+        else
+            -- Use frontier patterns to ensure whole word/phrase matching.
+            local escapedPhrase = escapePattern(phrase:lower())
+            local pattern = "%f[%w]" .. escapedPhrase .. "%f[%W]"
+            if string.find(message, pattern) then
+                return phrase
+            end
         end
     end
     return false
@@ -33,7 +50,8 @@ end
 
 -- Function to find if a message contains any keyword from a list and return the position and matched keyword
 function Utils.findKeywordPosition(message, keywordList)
-    message = " " .. message:lower() .. " " -- Add spaces around the message to match keywords at the start and end
+    -- Pad the message with spaces at the beginning and end.
+    message = " " .. message:lower() .. " "
     for _, keyword in ipairs(keywordList) do
         local pattern = "%f[%w]" .. keyword:lower() .. "%f[%W]"
         local position = string.find(message, pattern)

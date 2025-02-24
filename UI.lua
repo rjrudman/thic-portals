@@ -838,38 +838,6 @@ function UI.createOptionsPanel()
         end
     end, "Enables or disables the addon from listening to global channels for requests.")
 
-    -- Sound On/Off Checkbox
-    addCheckbox(checkboxGroup, "Enable Sound", UI.soundEnabledCheckbox, Config.Settings.soundEnabled, function(_, _, value)
-        Config.Settings.soundEnabled = value
-        if Config.Settings.soundEnabled then
-            print("|cff87CEEB[Thic-Portals]|r Sound enabled.")
-        else
-            print("|cff87CEEB[Thic-Portals]|r Sound disabled.")
-        end
-    end, "Enables or disables sound notifications.")
-
-    -- Debug Mode Checkbox
-    addCheckbox(checkboxGroup, "Enable Debug Mode", UI.debugModeCheckbox, Config.Settings.debugMode, function(_, _, value)
-        Config.Settings.debugMode = value
-        if Config.Settings.debugMode then
-            print("|cff87CEEB[Thic-Portals]|r Debug mode enabled.")
-        else
-            print("|cff87CEEB[Thic-Portals]|r Debug mode disabled.")
-        end
-    end, "Toggles debug mode for additional console logging.")
-
-    -- Hide Icon Checkbox
-    addCheckbox(checkboxGroup, "Hide Icon", UI.hideIconCheckbox, Config.Settings.hideIcon, function(_, _, value)
-        Config.Settings.hideIcon = value
-        if Config.Settings.hideIcon then
-            print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked visible.")
-            toggleButton:Hide()
-        else
-            print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked hidden.")
-            toggleButton:Show()
-        end
-    end, "Hides or shows the toggle button on the screen. You can use '/Tp show' to reveal the hidden icon again.")
-
     -- Approach Mode Checkbox
     addCheckbox(checkboxGroup, "Approach Mode", UI.approachModeCheckbox, Config.Settings.ApproachMode, function(_, _, value)
         Config.Settings.ApproachMode = value
@@ -919,6 +887,38 @@ function UI.createOptionsPanel()
             print("|cff87CEEB[Thic-Portals]|r AFK protection enabled.")
         end
     end, "Disables the AFK protection feature which is in place to prevent potentially over-inviting players if the user forgets the addon is running. Two players in a row leaving the party without payment triggers shop close.")
+
+    -- Hide Icon Checkbox
+    addCheckbox(checkboxGroup, "Hide Icon", UI.hideIconCheckbox, Config.Settings.hideIcon, function(_, _, value)
+        Config.Settings.hideIcon = value
+        if Config.Settings.hideIcon then
+            print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked visible.")
+            toggleButton:Hide()
+        else
+            print("|cff87CEEB[Thic-Portals]|r Open/Closed icon marked hidden.")
+            toggleButton:Show()
+        end
+    end, "Hides or shows the toggle button on the screen. You can use '/Tp show' to reveal the hidden icon again.")
+
+    -- Sound On/Off Checkbox
+    addCheckbox(checkboxGroup, "Enable Sound", UI.soundEnabledCheckbox, Config.Settings.soundEnabled, function(_, _, value)
+        Config.Settings.soundEnabled = value
+        if Config.Settings.soundEnabled then
+            print("|cff87CEEB[Thic-Portals]|r Sound enabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Sound disabled.")
+        end
+    end, "Enables or disables sound notifications.")
+
+    -- Debug Mode Checkbox
+    addCheckbox(checkboxGroup, "Enable Debug Mode", UI.debugModeCheckbox, Config.Settings.debugMode, function(_, _, value)
+        Config.Settings.debugMode = value
+        if Config.Settings.debugMode then
+            print("|cff87CEEB[Thic-Portals]|r Debug mode enabled.")
+        else
+            print("|cff87CEEB[Thic-Portals]|r Debug mode disabled.")
+        end
+    end, "Toggles debug mode for additional console logging.")
 
     -- Create a label for the food and water prices
     scroll:AddChild(checkboxGroup)
@@ -1024,17 +1024,17 @@ function UI.createOptionsPanel()
     messageConfigGroup:AddChild(largeVerticalGap)
 
     -- Creating Keyword Sections
-    createKeywordSection(scroll, "|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, "Keyword", "If the addon matches one of these keywords in any evaluated message, it will discard it.")
+    createKeywordSection(scroll, "|cFFFFD700Any Keyword Ban List Management|r", Config.Settings.KeywordBanList, "Keyword", "If the addon matches one of these keywords or phrases in any evaluated message, it will ignore it. This is an exact match by default, to use a partial match where the keyword exists within another word, wrap the keyword in '%' (e.g. %keyword%).")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Common Phrases Management|r", Config.Settings.commonPhrases, "Common Phrase", "Common Phrases are the first compared list of terms before any other keyword matching occurs. The only way to send an automated invite in this scenario is to match one of the below phrases exactly. The phrase can exist as part of the entire message!")
+    createKeywordSection(scroll, "|cFFFFD700Common Phrases Management|r", Config.Settings.commonPhrases, "Common Phrase", "Common Phrases are the first compared list of terms before any other keyword matching occurs. The only way to send an automated invite in this scenario is to match one of the below phrases. This is an exact match by default, but it may be contained in a sentence.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, "Intent", "Intent is used to match the player's intent to trade or request a service (e.g. wtb, need).")
+    createKeywordSection(scroll, "|cFFFFD700Intent Keywords Management|r", Config.Settings.IntentKeywords, "Intent", "Intent is used to match the player's intent to trade or request a service (e.g. wtb, need). Exact match only.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, "Destination", "Destination is used to match the player's intended destination (e.g. darna, if).")
+    createKeywordSection(scroll, "|cFFFFD700Destination Keywords Management|r", Config.Settings.DestinationKeywords, "Destination", "Destination is used to match the player's intended destination (e.g. darna, if). Exact match only.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, "Service", "Service is used to match the player's intended service (e.g. portal, tp).")
+    createKeywordSection(scroll, "|cFFFFD700Service Keywords Management|r", Config.Settings.ServiceKeywords, "Service", "Service is used to match the player's intended service (e.g. portal, tp). Exact match only.")
     scroll:AddChild(largeVerticalGap)
-    createKeywordSection(scroll, "|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'.")
+    createKeywordSection(scroll, "|cFFFFD700Player Ban List Management|r", Config.Settings.BanList, "Player", "The addon will scan each message and discard any message from a player in this list. Enter values in the format 'Player-Realm'. Exact match only.")
     scroll:AddChild(largeVerticalGap)
 
     -- Save the options panel reference in the config for other modules to use
