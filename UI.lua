@@ -582,6 +582,7 @@ function UI.showTicketWindow(sender, destination)
         end
     end
 
+    toggleMessageView()
     iconButton:SetScript("OnClick", toggleMessageView)
 
     -- Enable the remove button when the player has traveled
